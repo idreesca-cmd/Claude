@@ -1,0 +1,406 @@
+{
+  "data_rows": 11785,
+  "categories": [
+    "FURNITURE, FIXTURE AND OFFICE",
+    "MOTOR VEHICLES AND BICYCLES",
+    "SIGN BOARDS",
+    "COMPUTER AND OFFICE MACHINE/EQUIPMENT",
+    "PLANT AND EQUIPMENT",
+    "ERP - COMPUTER & OFFICE MACHINES",
+    "Own Brand",
+    " Rice & Pulses ",
+    "Branded Goods (BG) Non Food",
+    "ERP - COMPUTER AND IT EQUIPMENT",
+    "Rice & Pulses",
+    "ERP Computer and IT Equipment",
+    "ERP "
+  ],
+  "category_counts": {
+    "FURNITURE, FIXTURE AND OFFICE": 3991,
+    "MOTOR VEHICLES AND BICYCLES": 506,
+    "SIGN BOARDS": 143,
+    "COMPUTER AND OFFICE MACHINE/EQUIPMENT": 1413,
+    "PLANT AND EQUIPMENT": 383,
+    "ERP - COMPUTER & OFFICE MACHINES": 1141,
+    "Own Brand": 1020,
+    " Rice & Pulses ": 873,
+    "Branded Goods (BG) Non Food": 2297,
+    "ERP - COMPUTER AND IT EQUIPMENT": 2,
+    "Rice & Pulses": 5,
+    "ERP Computer and IT Equipment": 2,
+    "ERP ": 6
+  },
+  "zones": [
+    "SUKKUR",
+    "Sukkur",
+    "Karachi",
+    "Multan",
+    "Quetta",
+    "Lahore",
+    "Abbottabad",
+    "Islamabad",
+    "Peshawar",
+    "Faisalabad"
+  ],
+  "auction_status_counts": {
+    "Auctioned": 38,
+    "Pending": 173,
+    "NOT AUCTIONED": 5334,
+    "AUCTIONED": 1063,
+    "Auctioned ": 1294,
+    "Not Auctioned": 29,
+    "Consignment": 49
+  },
+  "per_category": {
+    "FURNITURE, FIXTURE AND OFFICE": {
+      "rows": 3991,
+      "physical_verification": {
+        "total_odoo": 345529,
+        "verified_physcount": 78407,
+        "pct": 22.7
+      },
+      "auction": {
+        "total_physcount": 78407,
+        "auctioned_qty": 24641,
+        "pct": 31.4,
+        "auctioned_rows": 35
+      },
+      "lifting": {
+        "total_auctioned_qty": 24641,
+        "lifted_qty": 27661,
+        "pct": 112.3
+      },
+      "payment": {
+        "total_auction_value": 13060520391,
+        "reserve_value": 2965797,
+        "payment_received": 331979849,
+        "pct_vs_auctval": 2.5
+      }
+    },
+    "MOTOR VEHICLES AND BICYCLES": {
+      "rows": 506,
+      "physical_verification": {
+        "total_odoo": 486,
+        "verified_physcount": 306,
+        "pct": 63.0
+      },
+      "auction": {
+        "total_physcount": 306,
+        "auctioned_qty": 0,
+        "pct": 0.0,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 0,
+        "lifted_qty": 0,
+        "pct": null
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "SIGN BOARDS": {
+      "rows": 143,
+      "physical_verification": {
+        "total_odoo": 4373,
+        "verified_physcount": 1892,
+        "pct": 43.3
+      },
+      "auction": {
+        "total_physcount": 1892,
+        "auctioned_qty": 701,
+        "pct": 37.1,
+        "auctioned_rows": 142
+      },
+      "lifting": {
+        "total_auctioned_qty": 701,
+        "lifted_qty": 524,
+        "pct": 74.8
+      },
+      "payment": {
+        "total_auction_value": 5823610,
+        "reserve_value": 10716,
+        "payment_received": 15441340,
+        "pct_vs_auctval": 265.2
+      }
+    },
+    "COMPUTER AND OFFICE MACHINE/EQUIPMENT": {
+      "rows": 1413,
+      "physical_verification": {
+        "total_odoo": 9700,
+        "verified_physcount": 3768,
+        "pct": 38.8
+      },
+      "auction": {
+        "total_physcount": 3768,
+        "auctioned_qty": 417,
+        "pct": 11.1,
+        "auctioned_rows": 30
+      },
+      "lifting": {
+        "total_auctioned_qty": 417,
+        "lifted_qty": 197,
+        "pct": 47.2
+      },
+      "payment": {
+        "total_auction_value": 388422,
+        "reserve_value": 406687,
+        "payment_received": 135642,
+        "pct_vs_auctval": 34.9
+      }
+    },
+    "PLANT AND EQUIPMENT": {
+      "rows": 383,
+      "physical_verification": {
+        "total_odoo": 5535,
+        "verified_physcount": 1760,
+        "pct": 31.8
+      },
+      "auction": {
+        "total_physcount": 1760,
+        "auctioned_qty": 37,
+        "pct": 2.1,
+        "auctioned_rows": 368
+      },
+      "lifting": {
+        "total_auctioned_qty": 37,
+        "lifted_qty": 322,
+        "pct": 870.3
+      },
+      "payment": {
+        "total_auction_value": 4761563,
+        "reserve_value": 562510,
+        "payment_received": 18872514,
+        "pct_vs_auctval": 396.4
+      }
+    },
+    "ERP - COMPUTER & OFFICE MACHINES": {
+      "rows": 1141,
+      "physical_verification": {
+        "total_odoo": 29343,
+        "verified_physcount": 25912,
+        "pct": 88.3
+      },
+      "auction": {
+        "total_physcount": 25912,
+        "auctioned_qty": 2875,
+        "pct": 11.1,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 2875,
+        "lifted_qty": 0,
+        "pct": 0.0
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 11400,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "Own Brand": {
+      "rows": 1020,
+      "physical_verification": {
+        "total_odoo": 1032033,
+        "verified_physcount": 559080,
+        "pct": 54.2
+      },
+      "auction": {
+        "total_physcount": 559080,
+        "auctioned_qty": 187374,
+        "pct": 33.5,
+        "auctioned_rows": 996
+      },
+      "lifting": {
+        "total_auctioned_qty": 187374,
+        "lifted_qty": 175462,
+        "pct": 93.6
+      },
+      "payment": {
+        "total_auction_value": 50967805,
+        "reserve_value": 840223,
+        "payment_received": 54150418,
+        "pct_vs_auctval": 106.2
+      }
+    },
+    " Rice & Pulses ": {
+      "rows": 873,
+      "physical_verification": {
+        "total_odoo": 1342954,
+        "verified_physcount": 1053129,
+        "pct": 78.4
+      },
+      "auction": {
+        "total_physcount": 1053129,
+        "auctioned_qty": 1728702,
+        "pct": 164.1,
+        "auctioned_rows": 824
+      },
+      "lifting": {
+        "total_auctioned_qty": 1728702,
+        "lifted_qty": 725897,
+        "pct": 42.0
+      },
+      "payment": {
+        "total_auction_value": 4002324163,
+        "reserve_value": 233131,
+        "payment_received": 547715748,
+        "pct_vs_auctval": 13.7
+      }
+    },
+    "Branded Goods (BG) Non Food": {
+      "rows": 2297,
+      "physical_verification": {
+        "total_odoo": 150745,
+        "verified_physcount": 49176,
+        "pct": 32.6
+      },
+      "auction": {
+        "total_physcount": 49176,
+        "auctioned_qty": 49176,
+        "pct": 100.0,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 49176,
+        "lifted_qty": 0,
+        "pct": 0.0
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "ERP - COMPUTER AND IT EQUIPMENT": {
+      "rows": 2,
+      "physical_verification": {
+        "total_odoo": 0,
+        "verified_physcount": 2,
+        "pct": null
+      },
+      "auction": {
+        "total_physcount": 2,
+        "auctioned_qty": 0,
+        "pct": 0.0,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 0,
+        "lifted_qty": 0,
+        "pct": null
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "Rice & Pulses": {
+      "rows": 5,
+      "physical_verification": {
+        "total_odoo": 30787,
+        "verified_physcount": 30535,
+        "pct": 99.2
+      },
+      "auction": {
+        "total_physcount": 30535,
+        "auctioned_qty": 0,
+        "pct": 0.0,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 0,
+        "lifted_qty": 0,
+        "pct": null
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "ERP Computer and IT Equipment": {
+      "rows": 2,
+      "physical_verification": {
+        "total_odoo": 0,
+        "verified_physcount": 27,
+        "pct": null
+      },
+      "auction": {
+        "total_physcount": 27,
+        "auctioned_qty": 0,
+        "pct": 0.0,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 0,
+        "lifted_qty": 0,
+        "pct": null
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "ERP ": {
+      "rows": 6,
+      "physical_verification": {
+        "total_odoo": 0,
+        "verified_physcount": 76,
+        "pct": null
+      },
+      "auction": {
+        "total_physcount": 76,
+        "auctioned_qty": 0,
+        "pct": 0.0,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 0,
+        "lifted_qty": 0,
+        "pct": null
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    },
+    "(blank)": {
+      "rows": 3,
+      "physical_verification": {
+        "total_odoo": 0,
+        "verified_physcount": 0,
+        "pct": null
+      },
+      "auction": {
+        "total_physcount": 0,
+        "auctioned_qty": 0,
+        "pct": null,
+        "auctioned_rows": 0
+      },
+      "lifting": {
+        "total_auctioned_qty": 0,
+        "lifted_qty": 0,
+        "pct": null
+      },
+      "payment": {
+        "total_auction_value": 0,
+        "reserve_value": 0,
+        "payment_received": 0,
+        "pct_vs_auctval": null
+      }
+    }
+  }
+}

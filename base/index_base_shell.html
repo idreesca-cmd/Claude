@@ -1,0 +1,953 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+<meta charset="UTF-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />  
+<title>USC Asset Disposal &amp; Reconciliation Dashboard | Baker Tilly</title>  
+<script src="https://cdn.tailwindcss.com"></script>  
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>  
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>  
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>  
+<style>  
+ :root{  
+ --bt-green:\#00A376;  
+ --bt-green-dark:\#007F5C;  
+ --bt-green-tint:\#E5F6F0;  
+ --bt-slate:\#2C3136;  
+ --bt-slate-soft:\#3F454C;  
+ --bt-bg:\#F9FAFB;  
+ --bt-border:\#E5E7EB;  
+ --bt-muted:\#6B7280;  
+ --bt-red:\#DC2626;  
+ --bt-amber:\#D97706;  
+ }  
+ html,body{background:var(--bt-bg);font-family:'Inter','Segoe UI',system-ui,sans-serif;color:var(--bt-slate);}  
+ .tab-btn{position:relative;padding:12px 18px;font-weight:600;color:\#6B7280;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;}  
+ .tab-btn:hover{color:var(--bt-slate);}  
+ .tab-btn.active{color:var(--bt-green);border-bottom-color:var(--bt-green);}  
+ .tab-btn .pending-pill{display:inline-block;margin-left:8px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:\#FEF3C7;color:\#92400E;letter-spacing:.04em;text-transform:uppercase;}  
+  
+ .kpi-card{background:\#fff;border:1px solid var(--bt-border);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.04);}  
+ .kpi-label{font-size:12px;letter-spacing:.06em;color:var(--bt-muted);text-transform:uppercase;font-weight:600;}  
+ .kpi-value{font-size:28px;font-weight:700;color:var(--bt-slate);margin-top:6px;line-height:1.1;}  
+ .kpi-sub{font-size:12px;color:var(--bt-muted);margin-top:4px;}  
+  
+ .chart-card{background:\#fff;border:1px solid var(--bt-border);border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.04);}  
+ .chart-title{font-size:14px;font-weight:600;color:var(--bt-slate);margin-bottom:4px;}  
+ .chart-sub{font-size:12px;color:var(--bt-muted);margin-bottom:14px;}  
+  
+ .slicer-label{font-size:11px;letter-spacing:.06em;color:\#9CA3AF;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block;}  
+ .slicer-select{width:100%;background:\#1f2428;color:\#fff;border:1px solid \#3a4148;border-radius:8px;padding:9px 10px;font-size:13px;outline:none;}  
+ .slicer-select:focus{border-color:var(--bt-green);box-shadow:0 0 0 2px rgba(0,163,118,.25);}  
+  
+ .data-table-wrap{max-height:520px;overflow:auto;border:1px solid var(--bt-border);border-radius:10px;}  
+ .data-table{width:100%;border-collapse:collapse;font-size:12.5px;}  
+ .data-table thead{position:sticky;top:0;background:\#F3F4F6;z-index:2;}  
+ .data-table th{padding:10px 12px;text-align:left;font-weight:600;color:var(--bt-slate);border-bottom:1px solid var(--bt-border);white-space:nowrap;}  
+ .data-table td{padding:9px 12px;border-bottom:1px solid \#F3F4F6;color:\#374151;}  
+ .data-table tbody tr:hover{background:\#FAFAFA;}  
+ .neg{color:var(--bt-red);font-weight:600;}  
+ .pos{color:var(--bt-green-dark);font-weight:600;}  
+  
+ .empty-state{text-align:center;padding:40px 20px;color:var(--bt-muted);font-size:14px;}  
+ .awaiting-card{background:\#fff;border:1px dashed \#D1D5DB;border-radius:14px;padding:48px 32px;text-align:center;}  
+ .awaiting-icon{width:56px;height:56px;border-radius:50%;background:\#FEF3C7;color:\#92400E;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;}  
+ .awaiting-title{font-size:18px;font-weight:700;color:var(--bt-slate);margin-bottom:8px;}  
+ .awaiting-sub{font-size:13.5px;color:var(--bt-muted);max-width:620px;margin:0 auto 18px;line-height:1.55;}  
+ .awaiting-fields{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px;}  
+ .awaiting-chip{font-size:11.5px;background:\#F3F4F6;color:\#374151;border-radius:999px;padding:5px 11px;font-weight:500;}  
+  
+ .upload-btn{background:\#fff;color:var(--bt-slate);border:1px dashed \#9CA3AF;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;}  
+ .upload-btn:hover{border-color:var(--bt-green);color:var(--bt-green);}  
+ .logo-mark{width:38px;height:38px;border-radius:8px;background:var(--bt-green);display:flex;align-items:center;justify-content:center;color:\#fff;font-weight:700;font-size:16px;letter-spacing:.02em;}  
+ .reset-btn{width:100%;background:transparent;color:\#fff;border:1px solid \#4B5258;border-radius:8px;padding:9px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .15s;}  
+ .reset-btn:hover{background:var(--bt-green);border-color:var(--bt-green);}  
+ .tab-pane{display:none;}  
+ .tab-pane.active{display:block;animation:fadeIn .2s ease-out;}  
+ @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}  
+ .sidebar{background:var(--bt-slate);color:\#D1D5DB;}  
+ .sidebar h3{color:\#9CA3AF;}  
+ .status-pill{background:\#fff;border:1px solid var(--bt-border);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--bt-muted);}  
+ .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:\#9CA3AF;margin-right:6px;vertical-align:middle;}  
+ .status-dot.live{background:var(--bt-green);box-shadow:0 0 0 3px rgba(0,163,118,.18);}  
+  
+ /* Upload toast — large prominent feedback so users can't miss it */  
+ \#uploadToast{position:fixed;top:80px;right:24px;z-index:100;min-width:320px;max-width:520px;background:\#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.16);border-left:4px solid var(--bt-green);padding:14px 18px;display:none;animation:toastSlide .25s ease-out;}  
+ \#uploadToast.error{border-left-color:var(--bt-red);}  
+ \#uploadToast.info{border-left-color:var(--bt-amber);}  
+ \#uploadToast .toast-title{font-weight:700;font-size:14px;color:var(--bt-slate);margin-bottom:4px;display:flex;align-items:center;gap:8px;}  
+ \#uploadToast .toast-body{font-size:13px;color:\#4B5563;line-height:1.5;}  
+ \#uploadToast .toast-detail{font-size:11.5px;color:\#6B7280;margin-top:8px;font-family:'SF Mono','Consolas',monospace;background:\#F9FAFB;padding:6px 8px;border-radius:6px;max-height:140px;overflow:auto;}  
+ \#uploadToast .toast-close{position:absolute;top:8px;right:10px;cursor:pointer;color:\#9CA3AF;font-size:18px;line-height:1;}  
+ \#uploadToast .toast-close:hover{color:var(--bt-slate);}  
+ \#uploadToast .spinner{display:inline-block;width:14px;height:14px;border:2px solid \#E5E7EB;border-top-color:var(--bt-green);border-radius:50%;animation:spin .8s linear infinite;}  
+ @keyframes spin{to{transform:rotate(360deg);}}  
+ @keyframes toastSlide{from{transform:translateX(40px);opacity:0;}to{transform:none;opacity:1;}}  
+</style>  
+</head>  
+<body class="min-h-screen">  
+  
+<!-- Upload feedback toast -->  
+<div id="uploadToast" role="status" aria-live="polite">  
+ <span class="toast-close" onclick="document.getElementById('uploadToast').style.display='none'">×</span>  
+ <div class="toast-title" id="toastTitle"></div>  
+ <div class="toast-body" id="toastBody"></div>  
+ <div class="toast-detail" id="toastDetail" style="display:none;"></div>  
+</div>  
+  
+<!-- ==================== HEADER ==================== -->  
+<header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">  
+ <div class="px-6 py-3 flex items-center justify-between gap-4">  
+ <div class="flex items-center gap-3">  
+ <div class="logo-mark">BT</div>  
+ <div>  
+ <div class="text-\[15px\] font-bold leading-tight">USC Asset Disposal &amp; Reconciliation</div>  
+ <div class="text-\[11px\] text-gray-500 leading-tight">Third-Party Validation Dashboard &middot; Baker Tilly</div>  
+ </div>  
+ </div>  
+ <div class="flex items-center gap-3">  
+ <span class="status-pill"><span id="statusDot" class="status-dot"></span><span id="statusText">Awaiting data</span></span>  
+ <label class="upload-btn" title="Upload .xlsx, .xls, or .csv">  
+ <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-1.5 -mt-0.5" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>  
+ Upload Excel / CSV  
+ <input id="csvInput" type="file" accept=".xlsx,.xls,.xlsm,.csv,.tsv" class="hidden" />  
+ </label>  
+ </div>  
+ </div>  
+</header>  
+  
+<div class="flex" style="min-height:calc(100vh - 64px);">  
+ <!-- ==================== SIDEBAR ==================== -->  
+ <aside class="sidebar w-64 shrink-0 px-5 py-6 flex flex-col">  
+ <h3 class="text-\[11px\] tracking-widest font-semibold mb-4">GLOBAL SLICERS</h3>  
+  
+ <div class="mb-4">  
+ <label class="slicer-label">Zone</label>  
+ <select id="filterZone" class="slicer-select"><option value="">All Zones</option></select>  
+ </div>  
+ <div class="mb-4">  
+ <label class="slicer-label">Region</label>  
+ <select id="filterRegion" class="slicer-select"><option value="">All Regions</option></select>  
+ </div>  
+ <div class="mb-4">  
+ <label class="slicer-label">Item Category</label>  
+ <select id="filterItemCat" class="slicer-select"><option value="">All Item Categories</option></select>  
+ </div>  
+ <div class="mb-5">  
+ <label class="slicer-label">Asset Category</label>  
+ <select id="filterAssetCat" class="slicer-select"><option value="">All Asset Categories</option></select>  
+ </div>  
+  
+ <button id="resetBtn" class="reset-btn">Reset Filters</button>  
+  
+ <div class="mt-auto pt-6 text-\[11px\] text-gray-400 leading-relaxed border-t border-gray-700 mt-6">  
+ <div class="font-semibold text-gray-300 mb-1">Data scope</div>  
+ <div id="scopeInfo">Upload a CSV to begin. Slicers cascade and apply to every tab.</div>  
+ </div>  
+ </aside>  
+  
+ <!-- ==================== MAIN ==================== -->  
+ <main class="flex-1 p-6">  
+  
+ <!-- Tab navigation -->  
+ <div class="flex items-center border-b border-gray-200 mb-6 bg-white rounded-t-xl px-4 shadow-sm">  
+ <button class="tab-btn active" data-tab="tab1">Overall Project Status</button>  
+ <button class="tab-btn" data-tab="tab2">Quantity Reconciliation</button>  
+ <button class="tab-btn" data-tab="tab3">Auction Reconciliation</button>  
+ <button class="tab-btn" data-tab="tab4">Payment &amp; Lifting<span class="pending-pill">Pending</span></button>  
+ </div>  
+  
+ <!-- ============ TAB 1 ============ -->  
+ <section id="tab1" class="tab-pane active">  
+ <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">  
+ <div class="kpi-card">  
+ <div class="kpi-label">Zones</div>  
+ <div id="kpi1Zones" class="kpi-value">—</div>  
+ <div id="kpi1ZonesSub" class="kpi-sub">Geographic scope</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Regions</div>  
+ <div id="kpi1Regions" class="kpi-value">—</div>  
+ <div id="kpi1RegionsSub" class="kpi-sub">across — zone(s)</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Total Asset Records</div>  
+ <div id="kpi1Records" class="kpi-value">—</div>  
+ <div id="kpi1RecordsSub" class="kpi-sub">From Recon-Database</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Total Odoo Qty (A)</div>  
+ <div id="kpi1A" class="kpi-value">—</div>  
+ <div class="kpi-sub">System of record</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Asset Categories</div>  
+ <div id="kpi1Cats" class="kpi-value">—</div>  
+ <div id="kpi1CatsSub" class="kpi-sub">across — item categories</div>  
+ </div>  
+ </div>  
+  
+ <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">  
+ <div class="chart-card lg:col-span-1">  
+ <div class="chart-title">Auction Status Breakdown</div>  
+ <div class="chart-sub">Distribution of records by disposal status</div>  
+ <div style="position:relative;height:300px;"><canvas id="chartStatus"></canvas></div>  
+ </div>  
+ <div class="chart-card lg:col-span-2">  
+ <div class="chart-title">Asset Records by Region</div>  
+ <div class="chart-sub">Number of asset records per region (post-filter)</div>  
+ <div style="position:relative;height:300px;"><canvas id="chartByRegion"></canvas></div>  
+ </div>  
+ </div>  
+  
+ <div class="chart-card mt-4">  
+ <div class="chart-title">Asset Records by Asset Category</div>  
+ <div class="chart-sub">Distribution across the five asset categories in scope</div>  
+ <div style="position:relative;height:300px;"><canvas id="chartByCat"></canvas></div>  
+ </div>  
+ </section>  
+  
+ <!-- ============ TAB 2 ============ -->  
+ <section id="tab2" class="tab-pane">  
+ <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">  
+ <div class="kpi-card">  
+ <div class="kpi-label">A &mdash; Odoo Qty</div>  
+ <div id="kpi2A" class="kpi-value">—</div>  
+ <div class="kpi-sub">System of record</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">B &mdash; Physical Lists</div>  
+ <div id="kpi2B" class="kpi-value">—</div>  
+ <div class="kpi-sub">Regional manager lists</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">C &mdash; Physical Count</div>  
+ <div id="kpi2C" class="kpi-value">—</div>  
+ <div class="kpi-sub">Warehouse physical count</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Net Variance (C − A)</div>  
+ <div id="kpi2Var" class="kpi-value">—</div>  
+ <div id="kpi2VarSub" class="kpi-sub">Physical vs. Odoo</div>  
+ </div>  
+ </div>  
+  
+ <div class="chart-card mb-5">  
+ <div class="chart-title">Odoo vs. Physical Lists vs. Physical Count</div>  
+ <div class="chart-sub">Aggregated quantities by Asset Category</div>  
+ <div style="position:relative;height:360px;"><canvas id="chartReconCat"></canvas></div>  
+ </div>  
+  
+ <div class="chart-card mb-5">  
+ <div class="chart-title">Reconciliation by Region</div>  
+ <div class="chart-sub">A / B / C quantities aggregated by Region</div>  
+ <div style="position:relative;height:340px;"><canvas id="chartReconRegion"></canvas></div>  
+ </div>  
+  
+ <div class="chart-card">  
+ <div class="chart-title">Variance Detail &mdash; Per Asset</div>  
+ <div class="chart-sub">Negative variance (shortage) in red, positive (overage) in green. Sorted shortages first.</div>  
+ <div id="varianceTableWrap" class="data-table-wrap"></div>  
+ </div>  
+ </section>  
+  
+ <!-- ============ TAB 3 ============ -->  
+ <section id="tab3" class="tab-pane">  
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">  
+ <div class="kpi-card">  
+ <div class="kpi-label">Auction Qty &mdash; Usable</div>  
+ <div id="kpi3Usable" class="kpi-value">—</div>  
+ <div id="kpi3UsableSub" class="kpi-sub">— records carry usable qty</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Auction Qty &mdash; Scrap</div>  
+ <div id="kpi3Scrap" class="kpi-value">—</div>  
+ <div id="kpi3ScrapSub" class="kpi-sub">— records carry scrap qty</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Auction Qty &mdash; Total</div>  
+ <div id="kpi3Total" class="kpi-value">—</div>  
+ <div id="kpi3TotalSub" class="kpi-sub">Usable + Scrap</div>  
+ </div>  
+ <div class="kpi-card">  
+ <div class="kpi-label">Records Auctioned</div>  
+ <div id="kpi3Coverage" class="kpi-value">—</div>  
+ <div id="kpi3CoverageSub" class="kpi-sub">share of records with auction qty</div>  
+ </div>  
+ </div>  
+  
+ <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">  
+ <div class="chart-card">  
+ <div class="chart-title">Auction Qty by Zone</div>  
+ <div class="chart-sub">Stacked: Usable vs. Scrap quantities per Zone</div>  
+ <div style="position:relative;height:340px;"><canvas id="chartAuctByZone"></canvas></div>  
+ </div>  
+ <div class="chart-card">  
+ <div class="chart-title">Auction Qty by Asset Category</div>  
+ <div class="chart-sub">Stacked: Usable vs. Scrap quantities per Asset Category</div>  
+ <div style="position:relative;height:340px;"><canvas id="chartAuctByCat"></canvas></div>  
+ </div>  
+ </div>  
+  
+ <div class="chart-card mb-5">  
+ <div class="chart-title">Auction Qty by Region</div>  
+ <div class="chart-sub">Stacked: Usable vs. Scrap quantities per Region</div>  
+ <div style="position:relative;height:340px;"><canvas id="chartAuctByRegion"></canvas></div>  
+ </div>  
+  
+ <div class="chart-card mb-5">  
+ <div class="chart-title">Auction Detail &mdash; Per Asset</div>  
+ <div class="chart-sub">Auctioned records sorted by total auction qty (highest first)</div>  
+ <div id="auctionTableWrap" class="data-table-wrap"></div>  
+ </div>  
+  
+ <div class="awaiting-card" style="padding:24px;">  
+ <div class="awaiting-title" style="font-size:15px;">Pricing &amp; Bidder Details &mdash; Still Awaiting</div>  
+ <div class="awaiting-sub" style="font-size:12.5px;">  
+ Auction Qty is now captured, but the financial-side fields below remain blank in the source. They will populate once the auction is monetised and bidder data is recorded.  
+ </div>  
+ <div class="awaiting-fields">  
+ <span class="awaiting-chip">Auction Date</span>  
+ <span class="awaiting-chip">Auction To Bidder</span>  
+ <span class="awaiting-chip">Reserve Price Usable</span>  
+ <span class="awaiting-chip">Reserve Price Scrape</span>  
+ <span class="awaiting-chip">Auction Price Usable</span>  
+ <span class="awaiting-chip">Auction Price Scrape</span>  
+ </div>  
+ </div>  
+ </section>  
+  
+ <!-- ============ TAB 4 ============ -->  
+ <section id="tab4" class="tab-pane">  
+ <div class="awaiting-card">  
+ <div class="awaiting-icon">⏳</div>  
+ <div class="awaiting-title">Payment &amp; Lifting Reconciliation &mdash; Awaiting Data</div>  
+ <div class="awaiting-sub">  
+ Payment receipts and physical lifting movements will be captured after the auction concludes and successful bidders make payment and collect their assets. This tab will populate automatically once the source workbook is updated.  
+ </div>  
+ <div class="awaiting-fields">  
+ <span class="awaiting-chip">Payment Date</span>  
+ <span class="awaiting-chip">Payment Rs.</span>  
+ <span class="awaiting-chip">Payment DD No.</span>  
+ <span class="awaiting-chip">Lifting Date</span>  
+ <span class="awaiting-chip">Lifted Qty</span>  
+ <span class="awaiting-chip">Lifted KGs</span>  
+ <span class="awaiting-chip">Balance Qty to be lifted</span>  
+ </div>  
+ </div>  
+ </section>  
+  
+ </main>  
+</div>  
+  
+<script>  
+/* ============================================================  
+ USC Asset Disposal & Reconciliation Dashboard  
+ Spec: 25 columns. Populated sections: Standard data + Quantity Reconciliation.  
+ Auction / Payment / Lifting tabs show "awaiting data" placeholders.  
+ ============================================================ */  
+  
+const BT = {  
+ green:'\#00A376', greenDark:'\#007F5C', greenTint:'\#7DCBB3',  
+ slate:'\#2C3136', slateSoft:'\#6B7280',  
+ amber:'\#D97706', red:'\#DC2626', blue:'\#2563EB',  
+ palette:\['\#00A376','\#2C3136','\#D97706','\#2563EB','\#9333EA','\#0891B2','\#DC2626','\#65A30D'\]  
+};  
+  
+Chart.defaults.font.family = "'Inter','Segoe UI',system-ui,sans-serif";  
+Chart.defaults.font.size = 12;  
+Chart.defaults.color = '\#374151';  
+  
+let RAW = \[\];  
+let CHARTS = {};  
+  
+/* ---------- The 25 spec columns ---------- */  
+const COL = {  
+ /* Standard (1-5) */  
+ zone:'Zone', region:'Region', itemCat:'Item Category', assetCat:'Asset Category', assetName:'Asset Name (Matched)',  
+ /* Quantities (6-8) */  
+ aQty:'A QTY (Odoo)', bQty:'B QTY (Physical Lists)', cQty:'C QTY (Physical Count)',  
+ /* Auction (9-18) */  
+ status:'Auction Status', auctionDate:'Auction Date',  
+ auctQtyUsable:'Auction Qty Usable', auctQtyScrap:'Auction Qty Scrap', auctQtyTotal:'Auction Qty Total',  
+ bidder:'Auction To Bidder',  
+ rpUsable:'Reserve Price Usable', rpScrap:'Reserve Price Scrape',  
+ apUsable:'Auction Price Usable', apScrap:'Auction Price Scrape',  
+ /* Payment (19-21) */  
+ payDate:'Payment Date', payRs:'Payment Rs.', ddNo:'Payment Demand Draft (DD) No.',  
+ /* Lifting (22-25) */  
+ liftDate:'Lifting Date', liftedQty:'Lifted Qty', liftedKg:'Lifted KGs', balanceQty:'Balance Qty to be lifted'  
+};  
+  
+/* Per spec: numeric columns 6-8, 11-13, 15-18, 20, 23, 24, 25 */  
+const NUMERIC_COLS = \[  
+ COL.aQty, COL.bQty, COL.cQty, // 6-8  
+ COL.auctQtyUsable, COL.auctQtyScrap, COL.auctQtyTotal, // 11-13  
+ COL.rpUsable, COL.rpScrap, COL.apUsable, COL.apScrap, // 15-18  
+ COL.payRs, // 20  
+ COL.liftedQty, COL.liftedKg, // 23-24  
+ COL.balanceQty // 25  
+\];  
+const DATE_COLS = \[COL.auctionDate, COL.payDate, COL.liftDate\];  
+  
+/* ---------- Parsing utilities ---------- */  
+function parseNumber(v){  
+ if(v===null||v===undefined) return 0;  
+ if(typeof v==='number') return isFinite(v)?v:0;  
+ let s=String(v).trim();  
+ if(!s) return 0;  
+ s = s.replace(/rs\.?/ig,'').replace(/,/g,'').replace(/\\s+/g,'').replace(/\[^\\d.\-+eE\]/g,'');  
+ const n = parseFloat(s);  
+ return isNaN(n)?0:n;  
+}  
+function parseDate(v){  
+ if(v===null||v===undefined||v==='') return null;  
+ if(v instanceof Date) return isNaN(v)?null:v;  
+ // Excel serial number (days since 1900-01-01, with the well-known 1900 leap bug)  
+ if (typeof v === 'number' && v > 25569 && v < 80000) {  
+ const ms = (v - 25569) * 86400 * 1000;  
+ const d = new Date(ms);  
+ return isNaN(d)?null:d;  
+ }  
+ const s = String(v).trim(); if(!s) return null;  
+ let d = new Date(s); if(!isNaN(d)) return d;  
+ const m = s.match(/^(\\d{1,2})\[\\/\-\.\](\\d{1,2})\[\\/\-\.\](\\d{2,4})$/);  
+ if(m){ let \[_,dd,mm,yy\]=m; if(yy.length===2) yy='20'+yy; d=new Date(+yy,+mm-1,+dd); return isNaN(d)?null:d; }  
+ return null;  
+}  
+function fmtNum(n,decimals=0){  
+ if(n===null||n===undefined||isNaN(n)) return '—';  
+ return Number(n).toLocaleString('en-US',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});  
+}  
+function fmtSigned(n){  
+ if(n===null||n===undefined||isNaN(n)) return '—';  
+ return (n>0?'+':'') + fmtNum(n);  
+}  
+function uniqueSorted(arr){  
+ return \[...new Set(arr.filter(x=>x!==null&&x!==undefined&&x!==''))\].sort((a,b)=>String(a).localeCompare(String(b)));  
+}  
+function escapeHtml(s){ if(s===null||s===undefined) return ''; return String(s).replace(/\[&<>"'\]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&\#39;'}\[c\])); }  
+  
+/* ---------- Row cleaning ---------- */  
+function cleanRow(r){  
+ const out = {};  
+ // Only retain spec columns; ignore anything else  
+ Object.values(COL).forEach(c => { out\[c\] = r\[c\]; });  
+ NUMERIC_COLS.forEach(c => { out\[c\] = parseNumber(out\[c\]); });  
+ DATE_COLS.forEach(c => { out\[c\] = parseDate(out\[c\]); });  
+ \[COL.zone, COL.region, COL.itemCat, COL.assetCat, COL.assetName, COL.status, COL.bidder, COL.ddNo\]  
+ .forEach(c => { out\[c\] = (out\[c\]===null||out\[c\]===undefined) ? '' : String(out\[c\]).trim(); });  
+ return out;  
+}  
+  
+/* ---------- Toast helper ---------- */  
+function showToast(kind, title, body, detail){  
+ // kind: 'success' (green) | 'error' (red) | 'info' (amber)  
+ const toast = document.getElementById('uploadToast');  
+ toast.className = ''; // reset  
+ if (kind === 'error') toast.classList.add('error');  
+ else if (kind === 'info') toast.classList.add('info');  
+ const icon = kind === 'error' ? '❌' : kind === 'info' ? '<span class="spinner"></span>' : '✅';  
+ document.getElementById('toastTitle').innerHTML = `${icon} <span>${title}</span>`;  
+ document.getElementById('toastBody').innerHTML = body || '';  
+ const detailEl = document.getElementById('toastDetail');  
+ if (detail){ detailEl.textContent = detail; detailEl.style.display = ''; }  
+ else { detailEl.style.display = 'none'; }  
+ toast.style.display = 'block';  
+ // auto-dismiss success after 5s  
+ clearTimeout(window._toastTimer);  
+ if (kind === 'success') window._toastTimer = setTimeout(()=>{ toast.style.display='none'; }, 5000);  
+}  
+  
+/* ---------- File upload — supports Excel (.xlsx/.xls/.xlsm) and CSV/TSV ---------- */  
+document.getElementById('csvInput').addEventListener('change', e => {  
+ const file = e.target.files\[0\];  
+ if(!file){ console.log('\[upload\] no file selected'); return; }  
+ console.log('\[upload\] file selected:', file.name, 'size:', file.size, 'type:', file.type);  
+ const ext = (file.name.split('.').pop() || '').toLowerCase();  
+ setStatus(`Reading ${file.name}…`, false);  
+ showToast('info', 'Reading file…', `Processing <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB)`);  
+ try {  
+ if (\['xlsx','xls','xlsm','xlsb','ods'\].includes(ext)) {  
+ handleExcel(file);  
+ } else if (\['csv','tsv','txt'\].includes(ext)) {  
+ handleDelimited(file);  
+ } else {  
+ throw new Error(`Unsupported file type ".${ext}". Please upload .xlsx, .xls, or .csv`);  
+ }  
+ } catch (err) {  
+ console.error('\[upload\] error:', err);  
+ showToast('error', 'Upload failed', err.message);  
+ setStatus('Upload failed — see toast', false);  
+ }  
+ // Reset the input so the same file can be re-uploaded  
+ e.target.value = '';  
+});  
+  
+function handleDelimited(file){  
+ if (typeof Papa === 'undefined'){  
+ showToast('error','Parser not loaded','PapaParse CDN script did not load. Check your internet connection and refresh the page.');  
+ return;  
+ }  
+ Papa.parse(file,{  
+ header:true, skipEmptyLines:true, dynamicTyping:false,  
+ complete: results => {  
+ console.log('\[upload\] CSV parsed:', results.data.length, 'rows');  
+ finishLoad(results.data, file.name, null, Object.keys(results.data\[0\]||{}));  
+ },  
+ error: err => {  
+ console.error('\[upload\] CSV parse error:', err);  
+ showToast('error','CSV parse failed', err.message);  
+ }  
+ });  
+}  
+  
+function handleExcel(file){  
+ if (typeof XLSX === 'undefined') {  
+ showToast('error','Excel parser not loaded','The xlsx CDN script did not load. Possible causes: no internet, corporate firewall blocking jsdelivr.net, or ad-blocker. Refresh the page or try a CSV instead.');  
+ return;  
+ }  
+ const reader = new FileReader();  
+ reader.onload = ev => {  
+ try {  
+ const wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array', cellDates:true });  
+ console.log('\[upload\] workbook loaded, sheets:', wb.SheetNames);  
+ const sheetName = pickBestSheet(wb);  
+ if (!sheetName) {  
+ showToast('error','No usable sheet found',  
+ `The workbook "${file.name}" was opened, but I couldn't find a sheet matching the expected structure.`,  
+ 'Available sheets: ' + wb.SheetNames.join(', '));  
+ return;  
+ }  
+ console.log('\[upload\] picked sheet:', sheetName);  
+ const rawRows = XLSX.utils.sheet_to_json(wb.Sheets\[sheetName\], { defval:'', raw:true });  
+ const rows = rawRows.map(row => {  
+ const cleaned = {};  
+ for (const k in row) cleaned\[String(k).trim()\] = row\[k\];  
+ return cleaned;  
+ });  
+ console.log('\[upload\] raw rows:', rows.length, 'first row keys:', Object.keys(rows\[0\]||{}).slice(0,8));  
+ finishLoad(rows, file.name, sheetName, Object.keys(rows\[0\]||{}), wb.SheetNames);  
+ } catch(err){  
+ console.error('\[upload\] Excel error:', err);  
+ showToast('error','Failed to parse Excel', err.message);  
+ }  
+ };  
+ reader.onerror = () => showToast('error','Could not read file','The browser refused to read the file. Try moving it to your Desktop and uploading again.');  
+ reader.readAsArrayBuffer(file);  
+}  
+  
+/* Final step shared by CSV + Excel paths */  
+function finishLoad(rows, filename, sheetName, headers, allSheets){  
+ const expected = \[COL.zone, COL.assetName, COL.region, COL.aQty\];  
+ const missing = expected.filter(c => !headers.includes(c));  
+ if (missing.length === expected.length) {  
+ showToast('error','Columns do not match',  
+ `None of the expected columns were found in "${filename}"${sheetName?' (sheet "'+sheetName+'")':''}. Make sure the headers match the spec exactly (e.g. "Zone", "Region", "Asset Name (Matched)", "A QTY (Odoo)").`,  
+ 'Found headers: ' + headers.join(', ') + (allSheets ? '\\nAll sheets: ' + allSheets.join(', ') : ''));  
+ return;  
+ }  
+ RAW = rows.map(cleanRow).filter(r => r\[COL.zone\] || r\[COL.assetName\] || r\[COL.region\]);  
+ console.log('\[upload\] cleaned records:', RAW.length);  
+ if (RAW.length === 0) {  
+ showToast('error','No valid records',  
+ `The file was parsed but no rows had Zone, Region, or Asset Name populated. Check the file isn't empty or that the right sheet was picked.`,  
+ sheetName ? `Sheet picked: "${sheetName}"\\nAll sheets: ${allSheets.join(', ')}` : '');  
+ return;  
+ }  
+ hydrateSlicers();  
+ renderAll();  
+ const sheetSuffix = sheetName && allSheets && allSheets.length > 1 ? ` · sheet "${sheetName}"` : '';  
+ setStatus(`${RAW.length.toLocaleString()} records loaded from ${filename}${sheetSuffix}`, true);  
+ let body = `Loaded <strong>${RAW.length.toLocaleString()} records</strong> from <strong>${filename}</strong>`;  
+ if (sheetSuffix) body += `<br><span style="color:\#6B7280">${sheetSuffix.substring(3)}</span>`;  
+ if (missing.length > 0) {  
+ body += `<br><span style="color:\#92400E;font-size:12px">Note: ${missing.length} expected column${missing.length===1?'':'s'} missing (${missing.join(', ')}) — those panels may be blank.</span>`;  
+ }  
+ showToast('success', 'Upload complete', body);  
+}  
+  
+/* Pick the most-likely data sheet from a workbook.  
+ Priority: 1) name contains "recon", 2) has Zone+Asset Name (Matched) headers,  
+ 3) first sheet with >1 populated row */  
+function pickBestSheet(wb){  
+ const names = wb.SheetNames;  
+ // 1) explicit Recon-Database (or anything containing 'recon')  
+ const reconMatch = names.find(n => /recon/i.test(n));  
+ if (reconMatch) return reconMatch;  
+ // 2) header signature match  
+ const sig = \['Zone','Asset Name (Matched)'\];  
+ for (const n of names) {  
+ const ws = wb.Sheets\[n\];  
+ const ref = ws\['!ref'\]; if (!ref) continue;  
+ const headerRow = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' })\[0\] || \[\];  
+ const hdrs = headerRow.map(h => String(h||'').trim().replace(/\\s+/g,' '));  
+ if (sig.every(s => hdrs.includes(s))) return n;  
+ }  
+ // 3) first non-empty sheet  
+ for (const n of names) {  
+ const ws = wb.Sheets\[n\];  
+ const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });  
+ if (rows.length > 0) return n;  
+ }  
+ return null;  
+}  
+function setStatus(text, live){  
+ document.getElementById('statusText').textContent = text;  
+ document.getElementById('statusDot').classList.toggle('live', !!live);  
+}  
+  
+/* ---------- Slicers ---------- */  
+function hydrateSlicers(){  
+ \['filterZone','filterRegion','filterItemCat','filterAssetCat'\].forEach(id => { document.getElementById(id).value = ''; });  
+ cascadeSlicers();  
+}  
+function cascadeSlicers(){  
+ const z = document.getElementById('filterZone').value;  
+ const r = document.getElementById('filterRegion').value;  
+ const ic = document.getElementById('filterItemCat').value;  
+ populateSelect('filterZone', uniqueSorted(RAW.map(x=>x\[COL.zone\])), 'All Zones', z);  
+ populateSelect('filterRegion', uniqueSorted(RAW.filter(x => !z || x\[COL.zone\]===z).map(x=>x\[COL.region\])), 'All Regions', r);  
+ populateSelect('filterItemCat', uniqueSorted(RAW.filter(x => (!z||x\[COL.zone\]===z) && (!r||x\[COL.region\]===r)).map(x=>x\[COL.itemCat\])), 'All Item Categories', ic);  
+ populateSelect('filterAssetCat', uniqueSorted(RAW.filter(x => (!z||x\[COL.zone\]===z) && (!r||x\[COL.region\]===r) && (!ic||x\[COL.itemCat\]===ic)).map(x=>x\[COL.assetCat\])), 'All Asset Categories', document.getElementById('filterAssetCat').value);  
+}  
+function populateSelect(id, values, allLabel, keepValue){  
+ const sel = document.getElementById(id);  
+ const current = keepValue!==undefined ? keepValue : sel.value;  
+ sel.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${escapeHtml(v)}"${v===current?' selected':''}>${escapeHtml(v)}</option>`).join('');  
+ if(values.indexOf(current)===-1) sel.value = '';  
+}  
+\['filterZone','filterRegion','filterItemCat','filterAssetCat'\].forEach(id => {  
+ document.getElementById(id).addEventListener('change', () => { cascadeSlicers(); renderAll(); });  
+});  
+document.getElementById('resetBtn').addEventListener('click', () => {  
+ \['filterZone','filterRegion','filterItemCat','filterAssetCat'\].forEach(id => { document.getElementById(id).value=''; });  
+ cascadeSlicers(); renderAll();  
+});  
+  
+function getFiltered(){  
+ const z = document.getElementById('filterZone').value;  
+ const r = document.getElementById('filterRegion').value;  
+ const ic = document.getElementById('filterItemCat').value;  
+ const ac = document.getElementById('filterAssetCat').value;  
+ return RAW.filter(row =>  
+ (!z || row\[COL.zone\]===z) && (!r || row\[COL.region\]===r) &&  
+ (!ic || row\[COL.itemCat\]===ic) && (!ac || row\[COL.assetCat\]===ac)  
+ );  
+}  
+  
+/* ---------- Chart helpers ---------- */  
+function destroyChart(id){ if(CHARTS\[id\]){ CHARTS\[id\].destroy(); delete CHARTS\[id\]; } }  
+function noData(canvasId){  
+ destroyChart(canvasId);  
+ const c = document.getElementById(canvasId); if(!c) return;  
+ const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);  
+ ctx.fillStyle='\#9CA3AF'; ctx.font='13px Inter'; ctx.textAlign='center';  
+ ctx.fillText('No data for current filter selection', c.width/2, c.height/2);  
+}  
+function sum(arr,fn){ return arr.reduce((a,x)=>a + (fn?fn(x):x), 0); }  
+function groupBy(arr,key){  
+ const out = {};  
+ arr.forEach(r => { const k = r\[key\] || '(Unspecified)'; (out\[k\]=out\[k\]||\[\]).push(r); });  
+ return out;  
+}  
+  
+/* ---------- Tab navigation ---------- */  
+document.querySelectorAll('.tab-btn').forEach(btn => {  
+ btn.addEventListener('click', () => {  
+ document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));  
+ document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));  
+ btn.classList.add('active');  
+ document.getElementById(btn.dataset.tab).classList.add('active');  
+ renderAll();  
+ });  
+});  
+  
+/* ---------- Master render ---------- */  
+function renderAll(){  
+ const data = getFiltered();  
+ document.getElementById('scopeInfo').textContent = `${data.length.toLocaleString()} of ${RAW.length.toLocaleString()} records after filters.`;  
+ renderTab1(data);  
+ renderTab2(data);  
+ renderTab3(data);  
+}  
+  
+/* ==================== TAB 1 ==================== */  
+function renderTab1(data){  
+ const regions = uniqueSorted(data.map(r=>r\[COL.region\]));  
+ const zones = uniqueSorted(data.map(r=>r\[COL.zone\]));  
+ const cats = uniqueSorted(data.map(r=>r\[COL.assetCat\]));  
+ const items = uniqueSorted(data.map(r=>r\[COL.itemCat\]));  
+ document.getElementById('kpi1Zones').textContent = fmtNum(zones.length);  
+ document.getElementById('kpi1ZonesSub').textContent = zones.length === 1 ? zones\[0\] : `${zones.length} zones in scope`;  
+ document.getElementById('kpi1Regions').textContent = fmtNum(regions.length);  
+ document.getElementById('kpi1RegionsSub').textContent = `across ${zones.length} zone${zones.length===1?'':'s'}`;  
+ document.getElementById('kpi1Records').textContent = fmtNum(data.length);  
+ document.getElementById('kpi1A').textContent = fmtNum(sum(data,r=>r\[COL.aQty\]));  
+ document.getElementById('kpi1Cats').textContent = fmtNum(cats.length);  
+ document.getElementById('kpi1CatsSub').textContent = `across ${items.length} item categor${items.length===1?'y':'ies'}`;  
+  
+ // Donut: Auction Status (treat blanks as "Auction Pending" since auction hasn't been conducted)  
+ destroyChart('chartStatus');  
+ if(data.length===0){ noData('chartStatus'); }  
+ else {  
+ const grp = {};  
+ data.forEach(r => {  
+ const k = r\[COL.status\] || 'Auction Pending';  
+ grp\[k\] = (grp\[k\]||0) + 1;  
+ });  
+ const labels = Object.keys(grp);  
+ const vals = labels.map(k => grp\[k\]);  
+ CHARTS.chartStatus = new Chart(document.getElementById('chartStatus'),{  
+ type:'doughnut',  
+ data:{ labels, datasets:\[{ data:vals, backgroundColor: labels.map((_,i)=>BT.palette\[i%BT.palette.length\]), borderColor:'\#fff', borderWidth:2 }\] },  
+ options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',  
+ plugins:{ legend:{position:'bottom', labels:{boxWidth:12, padding:12}},  
+ tooltip:{ callbacks:{ label: ctx => `${ctx.label}: ${ctx.parsed} (${(ctx.parsed/vals.reduce((a,b)=>a+b,0)*100).toFixed(1)}%)` } } } }  
+ });  
+ }  
+  
+ // Bar: By Region  
+ destroyChart('chartByRegion');  
+ if(data.length===0){ noData('chartByRegion'); }  
+ else {  
+ const grp = groupBy(data, COL.region);  
+ const labels = Object.keys(grp).sort();  
+ const counts = labels.map(k => grp\[k\].length);  
+ CHARTS.chartByRegion = new Chart(document.getElementById('chartByRegion'),{  
+ type:'bar',  
+ data:{ labels, datasets:\[{ label:'Asset records', data:counts, backgroundColor:BT.green, borderRadius:6, maxBarThickness:48 }\] },  
+ options:{ responsive:true, maintainAspectRatio:false,  
+ plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${fmtNum(ctx.parsed.y)} records`}}},  
+ scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'\#F3F4F6'}} } }  
+ });  
+ }  
+  
+ // Bar: By Asset Category  
+ destroyChart('chartByCat');  
+ if(data.length===0){ noData('chartByCat'); }  
+ else {  
+ const grp = groupBy(data, COL.assetCat);  
+ const labels = Object.keys(grp).sort();  
+ const counts = labels.map(k => grp\[k\].length);  
+ CHARTS.chartByCat = new Chart(document.getElementById('chartByCat'),{  
+ type:'bar',  
+ data:{ labels, datasets:\[{ label:'Asset records', data:counts, backgroundColor:BT.slate, borderRadius:6, maxBarThickness:48 }\] },  
+ options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',  
+ plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${fmtNum(ctx.parsed.x)} records`}}},  
+ scales:{ x:{beginAtZero:true, grid:{color:'\#F3F4F6'}}, y:{grid:{display:false}} } }  
+ });  
+ }  
+}  
+  
+/* ==================== TAB 2 ==================== */  
+function renderTab2(data){  
+ const a = sum(data,r=>r\[COL.aQty\]);  
+ const b = sum(data,r=>r\[COL.bQty\]);  
+ const c = sum(data,r=>r\[COL.cQty\]);  
+ document.getElementById('kpi2A').textContent = fmtNum(a);  
+ document.getElementById('kpi2B').textContent = fmtNum(b);  
+ document.getElementById('kpi2C').textContent = fmtNum(c);  
+ const variance = c - a;  
+ const varEl = document.getElementById('kpi2Var');  
+ varEl.textContent = fmtSigned(variance);  
+ varEl.style.color = variance < 0 ? 'var(--bt-red)' : (variance > 0 ? 'var(--bt-green-dark)' : 'var(--bt-slate)');  
+ document.getElementById('kpi2VarSub').textContent =  
+ variance < 0 ? `Shortage of ${fmtNum(Math.abs(variance))} units` :  
+ variance > 0 ? `Overage of ${fmtNum(variance)} units` : 'Perfect match';  
+  
+ // Chart: Grouped bar by Asset Category  
+ destroyChart('chartReconCat');  
+ if(data.length===0){ noData('chartReconCat'); }  
+ else {  
+ const grp = groupBy(data, COL.assetCat);  
+ const labels = Object.keys(grp).sort();  
+ CHARTS.chartReconCat = new Chart(document.getElementById('chartReconCat'),{  
+ type:'bar',  
+ data:{ labels, datasets:\[  
+ { label:'A — Odoo Qty', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.aQty\])), backgroundColor:BT.green, borderRadius:4 },  
+ { label:'B — Physical Lists', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.bQty\])), backgroundColor:BT.slate, borderRadius:4 },  
+ { label:'C — Physical Count', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.cQty\])), backgroundColor:BT.amber, borderRadius:4 }  
+ \]},  
+ options:{ responsive:true, maintainAspectRatio:false,  
+ plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:12}}},  
+ scales:{ x:{grid:{display:false}, ticks:{font:{size:11}, autoSkip:false, maxRotation:25}}, y:{beginAtZero:true, grid:{color:'\#F3F4F6'}} } }  
+ });  
+ }  
+  
+ // Chart: Grouped bar by Region  
+ destroyChart('chartReconRegion');  
+ if(data.length===0){ noData('chartReconRegion'); }  
+ else {  
+ const grp = groupBy(data, COL.region);  
+ const labels = Object.keys(grp).sort();  
+ CHARTS.chartReconRegion = new Chart(document.getElementById('chartReconRegion'),{  
+ type:'bar',  
+ data:{ labels, datasets:\[  
+ { label:'A — Odoo Qty', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.aQty\])), backgroundColor:BT.green, borderRadius:4 },  
+ { label:'B — Physical Lists', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.bQty\])), backgroundColor:BT.slate, borderRadius:4 },  
+ { label:'C — Physical Count', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.cQty\])), backgroundColor:BT.amber, borderRadius:4 }  
+ \]},  
+ options:{ responsive:true, maintainAspectRatio:false,  
+ plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:12}}},  
+ scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'\#F3F4F6'}} } }  
+ });  
+ }  
+  
+ // Variance table  
+ const wrap = document.getElementById('varianceTableWrap');  
+ if(data.length === 0){  
+ wrap.innerHTML = '<div class="empty-state">No records match the current filters.</div>';  
+ return;  
+ }  
+ // Aggregate per (Zone, Region, Asset Category, Asset Name)  
+ const map = new Map();  
+ data.forEach(r => {  
+ const k = `${r\[COL.zone\]}||${r\[COL.region\]}||${r\[COL.assetCat\]}||${r\[COL.assetName\]}`;  
+ const cur = map.get(k) || { zone:r\[COL.zone\], region:r\[COL.region\], assetCat:r\[COL.assetCat\], asset:r\[COL.assetName\], a:0, b:0, c:0 };  
+ cur.a += r\[COL.aQty\] || 0;  
+ cur.b += r\[COL.bQty\] || 0;  
+ cur.c += r\[COL.cQty\] || 0;  
+ map.set(k, cur);  
+ });  
+ const rows = \[...map.values()\].map(r => ({...r, ab: r.a - r.b, bc: r.b - r.c, ca: r.c - r.a }));  
+ rows.sort((x,y) => x.ca - y.ca); // shortages first  
+ wrap.innerHTML = `<table class="data-table">  
+ <thead><tr>  
+ <th>Zone</th><th>Region</th><th>Asset Category</th><th>Asset Name</th>  
+ <th class="text-right">A (Odoo)</th>  
+ <th class="text-right">B (Lists)</th>  
+ <th class="text-right">C (Count)</th>  
+ <th class="text-right">A − B</th>  
+ <th class="text-right">B − C</th>  
+ <th class="text-right">C − A</th>  
+ </tr></thead>  
+ <tbody>${rows.map(r => `  
+ <tr>  
+ <td>${escapeHtml(r.zone)}</td>  
+ <td>${escapeHtml(r.region)}</td>  
+ <td>${escapeHtml(r.assetCat)}</td>  
+ <td>${escapeHtml(r.asset)}</td>  
+ <td style="text-align:right">${fmtNum(r.a)}</td>  
+ <td style="text-align:right">${fmtNum(r.b)}</td>  
+ <td style="text-align:right">${fmtNum(r.c)}</td>  
+ <td style="text-align:right" class="${r.ab<0?'neg':(r.ab>0?'pos':'')}">${fmtSigned(r.ab)}</td>  
+ <td style="text-align:right" class="${r.bc<0?'neg':(r.bc>0?'pos':'')}">${fmtSigned(r.bc)}</td>  
+ <td style="text-align:right" class="${r.ca<0?'neg':(r.ca>0?'pos':'')}">${fmtSigned(r.ca)}</td>  
+ </tr>`).join('')}</tbody></table>`;  
+}  
+  
+/* ==================== TAB 3 — AUCTION RECONCILIATION ==================== */  
+function renderTab3(data){  
+ const usable = sum(data, r=>r\[COL.auctQtyUsable\]);  
+ const scrap = sum(data, r=>r\[COL.auctQtyScrap\]);  
+ // Auction Qty Total in source may double-count usable+scrap or be standalone;  
+ // present the source value rather than recompute, but show usable+scrap below.  
+ const totalSource = sum(data, r=>r\[COL.auctQtyTotal\]);  
+ const totalCalc = usable + scrap;  
+ const usableRows = data.filter(r => r\[COL.auctQtyUsable\] > 0).length;  
+ const scrapRows = data.filter(r => r\[COL.auctQtyScrap\] > 0).length;  
+ const auctionedRows = data.filter(r => r\[COL.auctQtyUsable\] > 0 || r\[COL.auctQtyScrap\] > 0 || r\[COL.auctQtyTotal\] > 0).length;  
+  
+ document.getElementById('kpi3Usable').textContent = fmtNum(usable);  
+ document.getElementById('kpi3UsableSub').textContent = `${fmtNum(usableRows)} record${usableRows===1?'':'s'} carry usable qty`;  
+ document.getElementById('kpi3Scrap').textContent = fmtNum(scrap);  
+ document.getElementById('kpi3ScrapSub').textContent = `${fmtNum(scrapRows)} record${scrapRows===1?'':'s'} carry scrap qty`;  
+ document.getElementById('kpi3Total').textContent = fmtNum(totalSource || totalCalc);  
+ document.getElementById('kpi3TotalSub').textContent = totalSource > 0  
+ ? `Source total · Usable + Scrap = ${fmtNum(totalCalc)}`  
+ : 'Usable + Scrap';  
+ document.getElementById('kpi3Coverage').textContent = fmtNum(auctionedRows);  
+ document.getElementById('kpi3CoverageSub').textContent = data.length  
+ ? `${((auctionedRows/data.length)*100).toFixed(1)}% of ${fmtNum(data.length)} records`  
+ : '—';  
+  
+ // Helper to build a stacked Usable vs Scrap chart by an arbitrary dimension  
+ function buildStacked(canvasId, dimensionCol, horizontal=false){  
+ destroyChart(canvasId);  
+ if(data.length===0){ noData(canvasId); return; }  
+ const grp = groupBy(data, dimensionCol);  
+ let labels = Object.keys(grp).sort();  
+ const usableVals = labels.map(k => sum(grp\[k\], r=>r\[COL.auctQtyUsable\]));  
+ const scrapVals = labels.map(k => sum(grp\[k\], r=>r\[COL.auctQtyScrap\]));  
+ // Skip rendering if nothing populated  
+ if(usableVals.every(v=>v===0) && scrapVals.every(v=>v===0)){ noData(canvasId); return; }  
+ CHARTS\[canvasId\] = new Chart(document.getElementById(canvasId), {  
+ type:'bar',  
+ data:{ labels, datasets:\[  
+ { label:'Usable Qty', data:usableVals, backgroundColor:BT.green, borderRadius:4 },  
+ { label:'Scrap Qty', data:scrapVals, backgroundColor:BT.slate, borderRadius:4 }  
+ \]},  
+ options:{ responsive:true, maintainAspectRatio:false, indexAxis: horizontal ? 'y' : 'x',  
+ plugins:{ legend:{position:'bottom', labels:{boxWidth:12, padding:12}},  
+ tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.parsed\[horizontal?'x':'y'\])}` } } },  
+ scales: horizontal ? {  
+ x:{ stacked:true, beginAtZero:true, grid:{color:'\#F3F4F6'} },  
+ y:{ stacked:true, grid:{display:false} }  
+ } : {  
+ x:{ stacked:true, grid:{display:false}, ticks:{font:{size:11}, autoSkip:false, maxRotation:25} },  
+ y:{ stacked:true, beginAtZero:true, grid:{color:'\#F3F4F6'} }  
+ } }  
+ });  
+ }  
+ buildStacked('chartAuctByZone', COL.zone);  
+ buildStacked('chartAuctByCat', COL.assetCat, true);  
+ buildStacked('chartAuctByRegion', COL.region);  
+  
+ // Auction detail table — only rows with auction qty  
+ const wrap = document.getElementById('auctionTableWrap');  
+ const auctioned = data.filter(r => r\[COL.auctQtyUsable\] > 0 || r\[COL.auctQtyScrap\] > 0 || r\[COL.auctQtyTotal\] > 0);  
+ if(auctioned.length === 0){  
+ wrap.innerHTML = '<div class="empty-state">No records have auction quantities under the current filters.</div>';  
+ return;  
+ }  
+ // Aggregate per (Zone, Region, Asset Category, Asset)  
+ const map = new Map();  
+ auctioned.forEach(r => {  
+ const k = `${r\[COL.zone\]}||${r\[COL.region\]}||${r\[COL.assetCat\]}||${r\[COL.assetName\]}`;  
+ const cur = map.get(k) || {  
+ zone:r\[COL.zone\], region:r\[COL.region\], cat:r\[COL.assetCat\], asset:r\[COL.assetName\],  
+ cQty:0, usable:0, scrap:0, total:0  
+ };  
+ cur.cQty += r\[COL.cQty\] || 0;  
+ cur.usable += r\[COL.auctQtyUsable\] || 0;  
+ cur.scrap += r\[COL.auctQtyScrap\] || 0;  
+ cur.total += r\[COL.auctQtyTotal\] || 0;  
+ map.set(k, cur);  
+ });  
+ const rows = \[...map.values()\].sort((a,b) => (b.usable+b.scrap) - (a.usable+a.scrap));  
+ wrap.innerHTML = `<table class="data-table">  
+ <thead><tr>  
+ <th>Zone</th><th>Region</th><th>Asset Category</th><th>Asset Name</th>  
+ <th class="text-right">Physical Count</th>  
+ <th class="text-right">Usable Qty</th>  
+ <th class="text-right">Scrap Qty</th>  
+ <th class="text-right">Total Qty</th>  
+ </tr></thead>  
+ <tbody>${rows.map(r => `  
+ <tr>  
+ <td>${escapeHtml(r.zone)}</td>  
+ <td>${escapeHtml(r.region)}</td>  
+ <td>${escapeHtml(r.cat)}</td>  
+ <td>${escapeHtml(r.asset)}</td>  
+ <td style="text-align:right">${fmtNum(r.cQty)}</td>  
+ <td style="text-align:right" class="${r.usable>0?'pos':''}">${fmtNum(r.usable)}</td>  
+ <td style="text-align:right" class="${r.scrap>0?'neg':''}">${fmtNum(r.scrap)}</td>  
+ <td style="text-align:right"><strong>${fmtNum(r.total || (r.usable + r.scrap))}</strong></td>  
+ </tr>`).join('')}</tbody></table>`;  
+}  
+  
+/* ---------- Initial empty state ---------- */  
+function bootEmpty(){  
+ setStatus('Awaiting data — upload a CSV to begin', false);  
+ \['chartStatus','chartByRegion','chartByCat','chartReconCat','chartReconRegion','chartAuctByZone','chartAuctByCat','chartAuctByRegion'\].forEach(id => {  
+ const c = document.getElementById(id);  
+ if(c){ const ctx = c.getContext('2d'); ctx.fillStyle='\#9CA3AF'; ctx.font='13px Inter'; ctx.textAlign='center';  
+ ctx.fillText('Upload a CSV to populate this chart', c.width/2 || 200, c.height/2 || 120); }  
+ });  
+ document.getElementById('varianceTableWrap').innerHTML = '<div class="empty-state">Upload a CSV to view the variance detail.</div>';  
+}  
+bootEmpty();  
+</script>  
+</body>  
+</html>  

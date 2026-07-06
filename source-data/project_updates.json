@@ -1,0 +1,598 @@
+{
+  "sheets": [
+    "Project Status",
+    "News"
+  ],
+  "records": [
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Islamabad",
+      "lead": "Waqar (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Rawalpindi N",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Rawalpindi S",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Attock",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Jhelum",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Chakwal",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Islamabad",
+      "category": "",
+      "region": "Gujrat",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Abbottabad",
+      "category": "",
+      "region": "Swabi",
+      "lead": "Mustafa (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Abbottabad",
+      "category": "",
+      "region": "Haripur",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Abbottabad",
+      "category": "",
+      "region": "Abbottabad",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Abbottabad",
+      "category": "",
+      "region": "Mansehra",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Abbottabad",
+      "category": "",
+      "region": "Muzafrabad",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Abbottabad",
+      "category": "",
+      "region": "Gilgit",
+      "lead": "Tufail/Moeen",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Peshawar North",
+      "lead": "Waleed Sultan (Ex-USC), Talha (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Mardan",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Swat",
+      "lead": "Naveed (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Dir",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Chitral",
+      "lead": "Umar Farooq (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Peshawar South",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Kohat",
+      "lead": "Barkat Ullah (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "Bannu",
+      "lead": "Barkat Ullah (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "Peshawar",
+      "category": "",
+      "region": "DIK",
+      "lead": "Barkat Ullah (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "FSD",
+      "category": "",
+      "region": "Mandi Bahauddin",
+      "lead": "Amim Ikram (Ex-USC), Umar Sheikh (BT)",
+      "status": "Advertised then Auctioned",
+      "date": "2025-09-17 / 2025-09-23",
+      "note": "Advertised on 17 Sep 2025; Auctioned on 23 Sep 2025 (auction & lifting status)",
+      "source": "Project Status"
+    },
+    {
+      "zone": "FSD",
+      "category": "",
+      "region": "Khushab",
+      "lead": "Amim",
+      "status": "Advertised then Auctioned",
+      "date": "2025-09-17 / 2025-09-23",
+      "note": "Advertised on 17 Sep 2025; Auctioned on 23 Sep 2025",
+      "source": "Project Status"
+    },
+    {
+      "zone": "FSD",
+      "category": "",
+      "region": "Sargodah",
+      "lead": "Amim",
+      "status": "Advertised then Auctioned",
+      "date": "2025-09-17 / 2025-09-23",
+      "note": "Advertised on 17 Sep 2025; Auctioned on 23 Sep 2025",
+      "source": "Project Status"
+    },
+    {
+      "zone": "FSD",
+      "category": "",
+      "region": "Faisalabad N",
+      "lead": "Amim",
+      "status": "Advertised then Auctioned",
+      "date": "2025-09-17 / 2025-09-23",
+      "note": "Advertised on 17 Sep 2025; Auctioned on 23 Sep 2025",
+      "source": "Project Status"
+    },
+    {
+      "zone": "FSD",
+      "category": "",
+      "region": "Faisalabad S",
+      "lead": "Amim",
+      "status": "Advertised then Auctioned",
+      "date": "2025-09-17 / 2025-09-23",
+      "note": "Advertised on 17 Sep 2025; Auctioned on 23 Sep 2025",
+      "source": "Project Status"
+    },
+    {
+      "zone": "FSD",
+      "category": "",
+      "region": "Jhang",
+      "lead": "Amim",
+      "status": "Advertised then Auctioned",
+      "date": "2025-09-17 / 2025-09-23",
+      "note": "Advertised on 17 Sep 2025; Auctioned on 23 Sep 2025",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Sheikhupura",
+      "lead": "Taimoor (Ex-USC), Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level auction detail present (Atta Stand, Balty Stands, Direction Board, Double Rack, End Rack, Fire Basket, etc.)",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Sialkot",
+      "lead": "Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level rows present",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Gujranwala",
+      "lead": "Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level rows present",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Lahore N",
+      "lead": "Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level rows present",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Lahore S",
+      "lead": "Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level rows present",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Okara",
+      "lead": "Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level rows present",
+      "source": "Project Status"
+    },
+    {
+      "zone": "LHR",
+      "category": "",
+      "region": "Sahiwal",
+      "lead": "Gohar & team",
+      "status": "Auction data captured (item-level)",
+      "date": "",
+      "note": "Item-level rows present",
+      "source": "Project Status"
+    },
+    {
+      "zone": "MTN",
+      "category": "",
+      "region": "Khanewal",
+      "lead": "Waseem (Ex-USC), M. Usman (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "MTN",
+      "category": "",
+      "region": "Multan",
+      "lead": "Hasnat Mehdi (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "MTN",
+      "category": "",
+      "region": "Layyah",
+      "lead": "M. Usman (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "MTN",
+      "category": "",
+      "region": "D G Khan",
+      "lead": "Ubaid Ali (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "MTN",
+      "category": "",
+      "region": "Vehari",
+      "lead": "Ubaid Ali (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "MTN",
+      "category": "",
+      "region": "Bahawalpur",
+      "lead": "Ubaid Ali (BT)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "SKR",
+      "category": "",
+      "region": "Rahim Yar Khan",
+      "lead": "Usama (BT), Farooq Nasir (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "SKR",
+      "category": "",
+      "region": "Shikar Pur",
+      "lead": "Anass",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "SKR",
+      "category": "",
+      "region": "Sukkur",
+      "lead": "Anass",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "SKR",
+      "category": "",
+      "region": "Larkana",
+      "lead": "Anass",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "KHI",
+      "category": "",
+      "region": "Karachi N",
+      "lead": "Sajjad (BT-USC), Hassan Khan (Ex), Abid Ali Soomro (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "KHI",
+      "category": "",
+      "region": "Karachi S",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "KHI",
+      "category": "",
+      "region": "Nawab Shah",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "KHI",
+      "category": "",
+      "region": "Hyderabad",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "KHI",
+      "category": "",
+      "region": "Badin",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Quetta",
+      "lead": "Shehriyar (Ex)",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Pishin",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Sibbi",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Nushki",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Loralai",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Qilla Saifullah",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "QTA",
+      "category": "",
+      "region": "Khuzdar",
+      "lead": "",
+      "status": "",
+      "date": "",
+      "note": "",
+      "source": "Project Status"
+    },
+    {
+      "zone": "",
+      "category": "",
+      "region": "",
+      "lead": "",
+      "status": "Planned",
+      "date": "2026-07-06",
+      "note": "Lifting is planned in Jhang on 02-07-2026",
+      "source": "News"
+    },
+    {
+      "zone": "Lahore",
+      "category": "Fixed Assets",
+      "region": "",
+      "lead": "",
+      "status": "Completed",
+      "date": "2026-07-03",
+      "note": "Lahore Zone Fixed Assets auction is completed. Report shared by Gohar Ali.",
+      "source": "News"
+    }
+  ]
+}
