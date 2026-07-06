@@ -10,77 +10,77 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>  
 <style>  
  :root{  
- --bt-green:\#00A376;  
- --bt-green-dark:\#007F5C;  
- --bt-green-tint:\#E5F6F0;  
- --bt-slate:\#2C3136;  
- --bt-slate-soft:\#3F454C;  
- --bt-bg:\#F9FAFB;  
- --bt-border:\#E5E7EB;  
- --bt-muted:\#6B7280;  
- --bt-red:\#DC2626;  
- --bt-amber:\#D97706;  
+ --bt-green:#00A376;  
+ --bt-green-dark:#007F5C;  
+ --bt-green-tint:#E5F6F0;  
+ --bt-slate:#2C3136;  
+ --bt-slate-soft:#3F454C;  
+ --bt-bg:#F9FAFB;  
+ --bt-border:#E5E7EB;  
+ --bt-muted:#6B7280;  
+ --bt-red:#DC2626;  
+ --bt-amber:#D97706;  
  }  
  html,body{background:var(--bt-bg);font-family:'Inter','Segoe UI',system-ui,sans-serif;color:var(--bt-slate);}  
- .tab-btn{position:relative;padding:12px 18px;font-weight:600;color:\#6B7280;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;}  
+ .tab-btn{position:relative;padding:12px 18px;font-weight:600;color:#6B7280;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;}  
  .tab-btn:hover{color:var(--bt-slate);}  
  .tab-btn.active{color:var(--bt-green);border-bottom-color:var(--bt-green);}  
- .tab-btn .pending-pill{display:inline-block;margin-left:8px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:\#FEF3C7;color:\#92400E;letter-spacing:.04em;text-transform:uppercase;}  
+ .tab-btn .pending-pill{display:inline-block;margin-left:8px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#FEF3C7;color:#92400E;letter-spacing:.04em;text-transform:uppercase;}  
   
- .kpi-card{background:\#fff;border:1px solid var(--bt-border);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.04);}  
+ .kpi-card{background:#fff;border:1px solid var(--bt-border);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.04);}  
  .kpi-label{font-size:12px;letter-spacing:.06em;color:var(--bt-muted);text-transform:uppercase;font-weight:600;}  
  .kpi-value{font-size:28px;font-weight:700;color:var(--bt-slate);margin-top:6px;line-height:1.1;}  
  .kpi-sub{font-size:12px;color:var(--bt-muted);margin-top:4px;}  
   
- .chart-card{background:\#fff;border:1px solid var(--bt-border);border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.04);}  
+ .chart-card{background:#fff;border:1px solid var(--bt-border);border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.04);}  
  .chart-title{font-size:14px;font-weight:600;color:var(--bt-slate);margin-bottom:4px;}  
  .chart-sub{font-size:12px;color:var(--bt-muted);margin-bottom:14px;}  
   
- .slicer-label{font-size:11px;letter-spacing:.06em;color:\#9CA3AF;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block;}  
- .slicer-select{width:100%;background:\#1f2428;color:\#fff;border:1px solid \#3a4148;border-radius:8px;padding:9px 10px;font-size:13px;outline:none;}  
+ .slicer-label{font-size:11px;letter-spacing:.06em;color:#9CA3AF;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block;}  
+ .slicer-select{width:100%;background:#1f2428;color:#fff;border:1px solid #3a4148;border-radius:8px;padding:9px 10px;font-size:13px;outline:none;}  
  .slicer-select:focus{border-color:var(--bt-green);box-shadow:0 0 0 2px rgba(0,163,118,.25);}  
   
  .data-table-wrap{max-height:520px;overflow:auto;border:1px solid var(--bt-border);border-radius:10px;}  
  .data-table{width:100%;border-collapse:collapse;font-size:12.5px;}  
- .data-table thead{position:sticky;top:0;background:\#F3F4F6;z-index:2;}  
+ .data-table thead{position:sticky;top:0;background:#F3F4F6;z-index:2;}  
  .data-table th{padding:10px 12px;text-align:left;font-weight:600;color:var(--bt-slate);border-bottom:1px solid var(--bt-border);white-space:nowrap;}  
- .data-table td{padding:9px 12px;border-bottom:1px solid \#F3F4F6;color:\#374151;}  
- .data-table tbody tr:hover{background:\#FAFAFA;}  
+ .data-table td{padding:9px 12px;border-bottom:1px solid #F3F4F6;color:#374151;}  
+ .data-table tbody tr:hover{background:#FAFAFA;}  
  .neg{color:var(--bt-red);font-weight:600;}  
  .pos{color:var(--bt-green-dark);font-weight:600;}  
   
  .empty-state{text-align:center;padding:40px 20px;color:var(--bt-muted);font-size:14px;}  
- .awaiting-card{background:\#fff;border:1px dashed \#D1D5DB;border-radius:14px;padding:48px 32px;text-align:center;}  
- .awaiting-icon{width:56px;height:56px;border-radius:50%;background:\#FEF3C7;color:\#92400E;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;}  
+ .awaiting-card{background:#fff;border:1px dashed #D1D5DB;border-radius:14px;padding:48px 32px;text-align:center;}  
+ .awaiting-icon{width:56px;height:56px;border-radius:50%;background:#FEF3C7;color:#92400E;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;}  
  .awaiting-title{font-size:18px;font-weight:700;color:var(--bt-slate);margin-bottom:8px;}  
  .awaiting-sub{font-size:13.5px;color:var(--bt-muted);max-width:620px;margin:0 auto 18px;line-height:1.55;}  
  .awaiting-fields{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px;}  
- .awaiting-chip{font-size:11.5px;background:\#F3F4F6;color:\#374151;border-radius:999px;padding:5px 11px;font-weight:500;}  
+ .awaiting-chip{font-size:11.5px;background:#F3F4F6;color:#374151;border-radius:999px;padding:5px 11px;font-weight:500;}  
   
- .upload-btn{background:\#fff;color:var(--bt-slate);border:1px dashed \#9CA3AF;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;}  
+ .upload-btn{background:#fff;color:var(--bt-slate);border:1px dashed #9CA3AF;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;}  
  .upload-btn:hover{border-color:var(--bt-green);color:var(--bt-green);}  
- .logo-mark{width:38px;height:38px;border-radius:8px;background:var(--bt-green);display:flex;align-items:center;justify-content:center;color:\#fff;font-weight:700;font-size:16px;letter-spacing:.02em;}  
- .reset-btn{width:100%;background:transparent;color:\#fff;border:1px solid \#4B5258;border-radius:8px;padding:9px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .15s;}  
+ .logo-mark{width:38px;height:38px;border-radius:8px;background:var(--bt-green);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;letter-spacing:.02em;}  
+ .reset-btn{width:100%;background:transparent;color:#fff;border:1px solid #4B5258;border-radius:8px;padding:9px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .15s;}  
  .reset-btn:hover{background:var(--bt-green);border-color:var(--bt-green);}  
  .tab-pane{display:none;}  
  .tab-pane.active{display:block;animation:fadeIn .2s ease-out;}  
  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}  
- .sidebar{background:var(--bt-slate);color:\#D1D5DB;}  
- .sidebar h3{color:\#9CA3AF;}  
- .status-pill{background:\#fff;border:1px solid var(--bt-border);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--bt-muted);}  
- .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:\#9CA3AF;margin-right:6px;vertical-align:middle;}  
+ .sidebar{background:var(--bt-slate);color:#D1D5DB;}  
+ .sidebar h3{color:#9CA3AF;}  
+ .status-pill{background:#fff;border:1px solid var(--bt-border);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--bt-muted);}  
+ .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9CA3AF;margin-right:6px;vertical-align:middle;}  
  .status-dot.live{background:var(--bt-green);box-shadow:0 0 0 3px rgba(0,163,118,.18);}  
   
  /* Upload toast — large prominent feedback so users can't miss it */  
- \#uploadToast{position:fixed;top:80px;right:24px;z-index:100;min-width:320px;max-width:520px;background:\#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.16);border-left:4px solid var(--bt-green);padding:14px 18px;display:none;animation:toastSlide .25s ease-out;}  
- \#uploadToast.error{border-left-color:var(--bt-red);}  
- \#uploadToast.info{border-left-color:var(--bt-amber);}  
- \#uploadToast .toast-title{font-weight:700;font-size:14px;color:var(--bt-slate);margin-bottom:4px;display:flex;align-items:center;gap:8px;}  
- \#uploadToast .toast-body{font-size:13px;color:\#4B5563;line-height:1.5;}  
- \#uploadToast .toast-detail{font-size:11.5px;color:\#6B7280;margin-top:8px;font-family:'SF Mono','Consolas',monospace;background:\#F9FAFB;padding:6px 8px;border-radius:6px;max-height:140px;overflow:auto;}  
- \#uploadToast .toast-close{position:absolute;top:8px;right:10px;cursor:pointer;color:\#9CA3AF;font-size:18px;line-height:1;}  
- \#uploadToast .toast-close:hover{color:var(--bt-slate);}  
- \#uploadToast .spinner{display:inline-block;width:14px;height:14px;border:2px solid \#E5E7EB;border-top-color:var(--bt-green);border-radius:50%;animation:spin .8s linear infinite;}  
+ #uploadToast{position:fixed;top:80px;right:24px;z-index:100;min-width:320px;max-width:520px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.16);border-left:4px solid var(--bt-green);padding:14px 18px;display:none;animation:toastSlide .25s ease-out;}  
+ #uploadToast.error{border-left-color:var(--bt-red);}  
+ #uploadToast.info{border-left-color:var(--bt-amber);}  
+ #uploadToast .toast-title{font-weight:700;font-size:14px;color:var(--bt-slate);margin-bottom:4px;display:flex;align-items:center;gap:8px;}  
+ #uploadToast .toast-body{font-size:13px;color:#4B5563;line-height:1.5;}  
+ #uploadToast .toast-detail{font-size:11.5px;color:#6B7280;margin-top:8px;font-family:'SF Mono','Consolas',monospace;background:#F9FAFB;padding:6px 8px;border-radius:6px;max-height:140px;overflow:auto;}  
+ #uploadToast .toast-close{position:absolute;top:8px;right:10px;cursor:pointer;color:#9CA3AF;font-size:18px;line-height:1;}  
+ #uploadToast .toast-close:hover{color:var(--bt-slate);}  
+ #uploadToast .spinner{display:inline-block;width:14px;height:14px;border:2px solid #E5E7EB;border-top-color:var(--bt-green);border-radius:50%;animation:spin .8s linear infinite;}  
  @keyframes spin{to{transform:rotate(360deg);}}  
  @keyframes toastSlide{from{transform:translateX(40px);opacity:0;}to{transform:none;opacity:1;}}  
 </style>  
@@ -101,8 +101,8 @@
  <div class="flex items-center gap-3">  
  <div class="logo-mark">BT</div>  
  <div>  
- <div class="text-\[15px\] font-bold leading-tight">USC Asset Disposal &amp; Reconciliation</div>  
- <div class="text-\[11px\] text-gray-500 leading-tight">Third-Party Validation Dashboard &middot; Baker Tilly</div>  
+ <div class="text-[15px] font-bold leading-tight">USC Asset Disposal &amp; Reconciliation</div>  
+ <div class="text-[11px] text-gray-500 leading-tight">Third-Party Validation Dashboard &middot; Baker Tilly</div>  
  </div>  
  </div>  
  <div class="flex items-center gap-3">  
@@ -119,7 +119,7 @@
 <div class="flex" style="min-height:calc(100vh - 64px);">  
  <!-- ==================== SIDEBAR ==================== -->  
  <aside class="sidebar w-64 shrink-0 px-5 py-6 flex flex-col">  
- <h3 class="text-\[11px\] tracking-widest font-semibold mb-4">GLOBAL SLICERS</h3>  
+ <h3 class="text-[11px] tracking-widest font-semibold mb-4">GLOBAL SLICERS</h3>  
   
  <div class="mb-4">  
  <label class="slicer-label">Zone</label>  
@@ -140,7 +140,7 @@
   
  <button id="resetBtn" class="reset-btn">Reset Filters</button>  
   
- <div class="mt-auto pt-6 text-\[11px\] text-gray-400 leading-relaxed border-t border-gray-700 mt-6">  
+ <div class="mt-auto pt-6 text-[11px] text-gray-400 leading-relaxed border-t border-gray-700 mt-6">  
  <div class="font-semibold text-gray-300 mb-1">Data scope</div>  
  <div id="scopeInfo">Upload a CSV to begin. Slicers cascade and apply to every tab.</div>  
  </div>  
@@ -348,17 +348,17 @@
  ============================================================ */  
   
 const BT = {  
- green:'\#00A376', greenDark:'\#007F5C', greenTint:'\#7DCBB3',  
- slate:'\#2C3136', slateSoft:'\#6B7280',  
- amber:'\#D97706', red:'\#DC2626', blue:'\#2563EB',  
- palette:\['\#00A376','\#2C3136','\#D97706','\#2563EB','\#9333EA','\#0891B2','\#DC2626','\#65A30D'\]  
+ green:'#00A376', greenDark:'#007F5C', greenTint:'#7DCBB3',  
+ slate:'#2C3136', slateSoft:'#6B7280',  
+ amber:'#D97706', red:'#DC2626', blue:'#2563EB',  
+ palette:['#00A376','#2C3136','#D97706','#2563EB','#9333EA','#0891B2','#DC2626','#65A30D']  
 };  
   
 Chart.defaults.font.family = "'Inter','Segoe UI',system-ui,sans-serif";  
 Chart.defaults.font.size = 12;  
-Chart.defaults.color = '\#374151';  
+Chart.defaults.color = '#374151';  
   
-let RAW = \[\];  
+let RAW = [];  
 let CHARTS = {};  
   
 /* ---------- The 25 spec columns ---------- */  
@@ -380,15 +380,15 @@ const COL = {
 };  
   
 /* Per spec: numeric columns 6-8, 11-13, 15-18, 20, 23, 24, 25 */  
-const NUMERIC_COLS = \[  
+const NUMERIC_COLS = [  
  COL.aQty, COL.bQty, COL.cQty, // 6-8  
  COL.auctQtyUsable, COL.auctQtyScrap, COL.auctQtyTotal, // 11-13  
  COL.rpUsable, COL.rpScrap, COL.apUsable, COL.apScrap, // 15-18  
  COL.payRs, // 20  
  COL.liftedQty, COL.liftedKg, // 23-24  
  COL.balanceQty // 25  
-\];  
-const DATE_COLS = \[COL.auctionDate, COL.payDate, COL.liftDate\];  
+];  
+const DATE_COLS = [COL.auctionDate, COL.payDate, COL.liftDate];  
   
 /* ---------- Parsing utilities ---------- */  
 function parseNumber(v){  
@@ -396,7 +396,7 @@ function parseNumber(v){
  if(typeof v==='number') return isFinite(v)?v:0;  
  let s=String(v).trim();  
  if(!s) return 0;  
- s = s.replace(/rs\.?/ig,'').replace(/,/g,'').replace(/\\s+/g,'').replace(/\[^\\d.\-+eE\]/g,'');  
+ s = s.replace(/rs\.?/ig,'').replace(/,/g,'').replace(/\\s+/g,'').replace(/[^\\d.\-+eE]/g,'');  
  const n = parseFloat(s);  
  return isNaN(n)?0:n;  
 }  
@@ -411,8 +411,8 @@ function parseDate(v){
  }  
  const s = String(v).trim(); if(!s) return null;  
  let d = new Date(s); if(!isNaN(d)) return d;  
- const m = s.match(/^(\\d{1,2})\[\\/\-\.\](\\d{1,2})\[\\/\-\.\](\\d{2,4})$/);  
- if(m){ let \[_,dd,mm,yy\]=m; if(yy.length===2) yy='20'+yy; d=new Date(+yy,+mm-1,+dd); return isNaN(d)?null:d; }  
+ const m = s.match(/^(\\d{1,2})[\\/\-\.](\\d{1,2})[\\/\-\.](\\d{2,4})$/);  
+ if(m){ let [_,dd,mm,yy]=m; if(yy.length===2) yy='20'+yy; d=new Date(+yy,+mm-1,+dd); return isNaN(d)?null:d; }  
  return null;  
 }  
 function fmtNum(n,decimals=0){  
@@ -424,19 +424,19 @@ function fmtSigned(n){
  return (n>0?'+':'') + fmtNum(n);  
 }  
 function uniqueSorted(arr){  
- return \[...new Set(arr.filter(x=>x!==null&&x!==undefined&&x!==''))\].sort((a,b)=>String(a).localeCompare(String(b)));  
+ return [...new Set(arr.filter(x=>x!==null&&x!==undefined&&x!==''))].sort((a,b)=>String(a).localeCompare(String(b)));  
 }  
-function escapeHtml(s){ if(s===null||s===undefined) return ''; return String(s).replace(/\[&<>"'\]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&\#39;'}\[c\])); }  
+function escapeHtml(s){ if(s===null||s===undefined) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }  
   
 /* ---------- Row cleaning ---------- */  
 function cleanRow(r){  
  const out = {};  
  // Only retain spec columns; ignore anything else  
- Object.values(COL).forEach(c => { out\[c\] = r\[c\]; });  
- NUMERIC_COLS.forEach(c => { out\[c\] = parseNumber(out\[c\]); });  
- DATE_COLS.forEach(c => { out\[c\] = parseDate(out\[c\]); });  
- \[COL.zone, COL.region, COL.itemCat, COL.assetCat, COL.assetName, COL.status, COL.bidder, COL.ddNo\]  
- .forEach(c => { out\[c\] = (out\[c\]===null||out\[c\]===undefined) ? '' : String(out\[c\]).trim(); });  
+ Object.values(COL).forEach(c => { out[c] = r[c]; });  
+ NUMERIC_COLS.forEach(c => { out[c] = parseNumber(out[c]); });  
+ DATE_COLS.forEach(c => { out[c] = parseDate(out[c]); });  
+ [COL.zone, COL.region, COL.itemCat, COL.assetCat, COL.assetName, COL.status, COL.bidder, COL.ddNo]  
+ .forEach(c => { out[c] = (out[c]===null||out[c]===undefined) ? '' : String(out[c]).trim(); });  
  return out;  
 }  
   
@@ -461,22 +461,22 @@ function showToast(kind, title, body, detail){
   
 /* ---------- File upload — supports Excel (.xlsx/.xls/.xlsm) and CSV/TSV ---------- */  
 document.getElementById('csvInput').addEventListener('change', e => {  
- const file = e.target.files\[0\];  
- if(!file){ console.log('\[upload\] no file selected'); return; }  
- console.log('\[upload\] file selected:', file.name, 'size:', file.size, 'type:', file.type);  
+ const file = e.target.files[0];  
+ if(!file){ console.log('[upload] no file selected'); return; }  
+ console.log('[upload] file selected:', file.name, 'size:', file.size, 'type:', file.type);  
  const ext = (file.name.split('.').pop() || '').toLowerCase();  
  setStatus(`Reading ${file.name}…`, false);  
  showToast('info', 'Reading file…', `Processing <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB)`);  
  try {  
- if (\['xlsx','xls','xlsm','xlsb','ods'\].includes(ext)) {  
+ if (['xlsx','xls','xlsm','xlsb','ods'].includes(ext)) {  
  handleExcel(file);  
- } else if (\['csv','tsv','txt'\].includes(ext)) {  
+ } else if (['csv','tsv','txt'].includes(ext)) {  
  handleDelimited(file);  
  } else {  
  throw new Error(`Unsupported file type ".${ext}". Please upload .xlsx, .xls, or .csv`);  
  }  
  } catch (err) {  
- console.error('\[upload\] error:', err);  
+ console.error('[upload] error:', err);  
  showToast('error', 'Upload failed', err.message);  
  setStatus('Upload failed — see toast', false);  
  }  
@@ -492,11 +492,11 @@ function handleDelimited(file){
  Papa.parse(file,{  
  header:true, skipEmptyLines:true, dynamicTyping:false,  
  complete: results => {  
- console.log('\[upload\] CSV parsed:', results.data.length, 'rows');  
- finishLoad(results.data, file.name, null, Object.keys(results.data\[0\]||{}));  
+ console.log('[upload] CSV parsed:', results.data.length, 'rows');  
+ finishLoad(results.data, file.name, null, Object.keys(results.data[0]||{}));  
  },  
  error: err => {  
- console.error('\[upload\] CSV parse error:', err);  
+ console.error('[upload] CSV parse error:', err);  
  showToast('error','CSV parse failed', err.message);  
  }  
  });  
@@ -511,7 +511,7 @@ function handleExcel(file){
  reader.onload = ev => {  
  try {  
  const wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array', cellDates:true });  
- console.log('\[upload\] workbook loaded, sheets:', wb.SheetNames);  
+ console.log('[upload] workbook loaded, sheets:', wb.SheetNames);  
  const sheetName = pickBestSheet(wb);  
  if (!sheetName) {  
  showToast('error','No usable sheet found',  
@@ -519,17 +519,17 @@ function handleExcel(file){
  'Available sheets: ' + wb.SheetNames.join(', '));  
  return;  
  }  
- console.log('\[upload\] picked sheet:', sheetName);  
- const rawRows = XLSX.utils.sheet_to_json(wb.Sheets\[sheetName\], { defval:'', raw:true });  
+ console.log('[upload] picked sheet:', sheetName);  
+ const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval:'', raw:true });  
  const rows = rawRows.map(row => {  
  const cleaned = {};  
- for (const k in row) cleaned\[String(k).trim()\] = row\[k\];  
+ for (const k in row) cleaned[String(k).trim()] = row[k];  
  return cleaned;  
  });  
- console.log('\[upload\] raw rows:', rows.length, 'first row keys:', Object.keys(rows\[0\]||{}).slice(0,8));  
- finishLoad(rows, file.name, sheetName, Object.keys(rows\[0\]||{}), wb.SheetNames);  
+ console.log('[upload] raw rows:', rows.length, 'first row keys:', Object.keys(rows[0]||{}).slice(0,8));  
+ finishLoad(rows, file.name, sheetName, Object.keys(rows[0]||{}), wb.SheetNames);  
  } catch(err){  
- console.error('\[upload\] Excel error:', err);  
+ console.error('[upload] Excel error:', err);  
  showToast('error','Failed to parse Excel', err.message);  
  }  
  };  
@@ -539,7 +539,7 @@ function handleExcel(file){
   
 /* Final step shared by CSV + Excel paths */  
 function finishLoad(rows, filename, sheetName, headers, allSheets){  
- const expected = \[COL.zone, COL.assetName, COL.region, COL.aQty\];  
+ const expected = [COL.zone, COL.assetName, COL.region, COL.aQty];  
  const missing = expected.filter(c => !headers.includes(c));  
  if (missing.length === expected.length) {  
  showToast('error','Columns do not match',  
@@ -547,8 +547,8 @@ function finishLoad(rows, filename, sheetName, headers, allSheets){
  'Found headers: ' + headers.join(', ') + (allSheets ? '\\nAll sheets: ' + allSheets.join(', ') : ''));  
  return;  
  }  
- RAW = rows.map(cleanRow).filter(r => r\[COL.zone\] || r\[COL.assetName\] || r\[COL.region\]);  
- console.log('\[upload\] cleaned records:', RAW.length);  
+ RAW = rows.map(cleanRow).filter(r => r[COL.zone] || r[COL.assetName] || r[COL.region]);  
+ console.log('[upload] cleaned records:', RAW.length);  
  if (RAW.length === 0) {  
  showToast('error','No valid records',  
  `The file was parsed but no rows had Zone, Region, or Asset Name populated. Check the file isn't empty or that the right sheet was picked.`,  
@@ -560,9 +560,9 @@ function finishLoad(rows, filename, sheetName, headers, allSheets){
  const sheetSuffix = sheetName && allSheets && allSheets.length > 1 ? ` · sheet "${sheetName}"` : '';  
  setStatus(`${RAW.length.toLocaleString()} records loaded from ${filename}${sheetSuffix}`, true);  
  let body = `Loaded <strong>${RAW.length.toLocaleString()} records</strong> from <strong>${filename}</strong>`;  
- if (sheetSuffix) body += `<br><span style="color:\#6B7280">${sheetSuffix.substring(3)}</span>`;  
+ if (sheetSuffix) body += `<br><span style="color:#6B7280">${sheetSuffix.substring(3)}</span>`;  
  if (missing.length > 0) {  
- body += `<br><span style="color:\#92400E;font-size:12px">Note: ${missing.length} expected column${missing.length===1?'':'s'} missing (${missing.join(', ')}) — those panels may be blank.</span>`;  
+ body += `<br><span style="color:#92400E;font-size:12px">Note: ${missing.length} expected column${missing.length===1?'':'s'} missing (${missing.join(', ')}) — those panels may be blank.</span>`;  
  }  
  showToast('success', 'Upload complete', body);  
 }  
@@ -576,17 +576,17 @@ function pickBestSheet(wb){
  const reconMatch = names.find(n => /recon/i.test(n));  
  if (reconMatch) return reconMatch;  
  // 2) header signature match  
- const sig = \['Zone','Asset Name (Matched)'\];  
+ const sig = ['Zone','Asset Name (Matched)'];  
  for (const n of names) {  
- const ws = wb.Sheets\[n\];  
- const ref = ws\['!ref'\]; if (!ref) continue;  
- const headerRow = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' })\[0\] || \[\];  
+ const ws = wb.Sheets[n];  
+ const ref = ws['!ref']; if (!ref) continue;  
+ const headerRow = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' })[0] || [];  
  const hdrs = headerRow.map(h => String(h||'').trim().replace(/\\s+/g,' '));  
  if (sig.every(s => hdrs.includes(s))) return n;  
  }  
  // 3) first non-empty sheet  
  for (const n of names) {  
- const ws = wb.Sheets\[n\];  
+ const ws = wb.Sheets[n];  
  const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });  
  if (rows.length > 0) return n;  
  }  
@@ -599,17 +599,17 @@ function setStatus(text, live){
   
 /* ---------- Slicers ---------- */  
 function hydrateSlicers(){  
- \['filterZone','filterRegion','filterItemCat','filterAssetCat'\].forEach(id => { document.getElementById(id).value = ''; });  
+ ['filterZone','filterRegion','filterItemCat','filterAssetCat'].forEach(id => { document.getElementById(id).value = ''; });  
  cascadeSlicers();  
 }  
 function cascadeSlicers(){  
  const z = document.getElementById('filterZone').value;  
  const r = document.getElementById('filterRegion').value;  
  const ic = document.getElementById('filterItemCat').value;  
- populateSelect('filterZone', uniqueSorted(RAW.map(x=>x\[COL.zone\])), 'All Zones', z);  
- populateSelect('filterRegion', uniqueSorted(RAW.filter(x => !z || x\[COL.zone\]===z).map(x=>x\[COL.region\])), 'All Regions', r);  
- populateSelect('filterItemCat', uniqueSorted(RAW.filter(x => (!z||x\[COL.zone\]===z) && (!r||x\[COL.region\]===r)).map(x=>x\[COL.itemCat\])), 'All Item Categories', ic);  
- populateSelect('filterAssetCat', uniqueSorted(RAW.filter(x => (!z||x\[COL.zone\]===z) && (!r||x\[COL.region\]===r) && (!ic||x\[COL.itemCat\]===ic)).map(x=>x\[COL.assetCat\])), 'All Asset Categories', document.getElementById('filterAssetCat').value);  
+ populateSelect('filterZone', uniqueSorted(RAW.map(x=>x[COL.zone])), 'All Zones', z);  
+ populateSelect('filterRegion', uniqueSorted(RAW.filter(x => !z || x[COL.zone]===z).map(x=>x[COL.region])), 'All Regions', r);  
+ populateSelect('filterItemCat', uniqueSorted(RAW.filter(x => (!z||x[COL.zone]===z) && (!r||x[COL.region]===r)).map(x=>x[COL.itemCat])), 'All Item Categories', ic);  
+ populateSelect('filterAssetCat', uniqueSorted(RAW.filter(x => (!z||x[COL.zone]===z) && (!r||x[COL.region]===r) && (!ic||x[COL.itemCat]===ic)).map(x=>x[COL.assetCat])), 'All Asset Categories', document.getElementById('filterAssetCat').value);  
 }  
 function populateSelect(id, values, allLabel, keepValue){  
  const sel = document.getElementById(id);  
@@ -617,11 +617,11 @@ function populateSelect(id, values, allLabel, keepValue){
  sel.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${escapeHtml(v)}"${v===current?' selected':''}>${escapeHtml(v)}</option>`).join('');  
  if(values.indexOf(current)===-1) sel.value = '';  
 }  
-\['filterZone','filterRegion','filterItemCat','filterAssetCat'\].forEach(id => {  
+['filterZone','filterRegion','filterItemCat','filterAssetCat'].forEach(id => {  
  document.getElementById(id).addEventListener('change', () => { cascadeSlicers(); renderAll(); });  
 });  
 document.getElementById('resetBtn').addEventListener('click', () => {  
- \['filterZone','filterRegion','filterItemCat','filterAssetCat'\].forEach(id => { document.getElementById(id).value=''; });  
+ ['filterZone','filterRegion','filterItemCat','filterAssetCat'].forEach(id => { document.getElementById(id).value=''; });  
  cascadeSlicers(); renderAll();  
 });  
   
@@ -631,24 +631,24 @@ function getFiltered(){
  const ic = document.getElementById('filterItemCat').value;  
  const ac = document.getElementById('filterAssetCat').value;  
  return RAW.filter(row =>  
- (!z || row\[COL.zone\]===z) && (!r || row\[COL.region\]===r) &&  
- (!ic || row\[COL.itemCat\]===ic) && (!ac || row\[COL.assetCat\]===ac)  
+ (!z || row[COL.zone]===z) && (!r || row[COL.region]===r) &&  
+ (!ic || row[COL.itemCat]===ic) && (!ac || row[COL.assetCat]===ac)  
  );  
 }  
   
 /* ---------- Chart helpers ---------- */  
-function destroyChart(id){ if(CHARTS\[id\]){ CHARTS\[id\].destroy(); delete CHARTS\[id\]; } }  
+function destroyChart(id){ if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; } }  
 function noData(canvasId){  
  destroyChart(canvasId);  
  const c = document.getElementById(canvasId); if(!c) return;  
  const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);  
- ctx.fillStyle='\#9CA3AF'; ctx.font='13px Inter'; ctx.textAlign='center';  
+ ctx.fillStyle='#9CA3AF'; ctx.font='13px Inter'; ctx.textAlign='center';  
  ctx.fillText('No data for current filter selection', c.width/2, c.height/2);  
 }  
 function sum(arr,fn){ return arr.reduce((a,x)=>a + (fn?fn(x):x), 0); }  
 function groupBy(arr,key){  
  const out = {};  
- arr.forEach(r => { const k = r\[key\] || '(Unspecified)'; (out\[k\]=out\[k\]||\[\]).push(r); });  
+ arr.forEach(r => { const k = r[key] || '(Unspecified)'; (out[k]=out[k]||[]).push(r); });  
  return out;  
 }  
   
@@ -674,16 +674,16 @@ function renderAll(){
   
 /* ==================== TAB 1 ==================== */  
 function renderTab1(data){  
- const regions = uniqueSorted(data.map(r=>r\[COL.region\]));  
- const zones = uniqueSorted(data.map(r=>r\[COL.zone\]));  
- const cats = uniqueSorted(data.map(r=>r\[COL.assetCat\]));  
- const items = uniqueSorted(data.map(r=>r\[COL.itemCat\]));  
+ const regions = uniqueSorted(data.map(r=>r[COL.region]));  
+ const zones = uniqueSorted(data.map(r=>r[COL.zone]));  
+ const cats = uniqueSorted(data.map(r=>r[COL.assetCat]));  
+ const items = uniqueSorted(data.map(r=>r[COL.itemCat]));  
  document.getElementById('kpi1Zones').textContent = fmtNum(zones.length);  
- document.getElementById('kpi1ZonesSub').textContent = zones.length === 1 ? zones\[0\] : `${zones.length} zones in scope`;  
+ document.getElementById('kpi1ZonesSub').textContent = zones.length === 1 ? zones[0] : `${zones.length} zones in scope`;  
  document.getElementById('kpi1Regions').textContent = fmtNum(regions.length);  
  document.getElementById('kpi1RegionsSub').textContent = `across ${zones.length} zone${zones.length===1?'':'s'}`;  
  document.getElementById('kpi1Records').textContent = fmtNum(data.length);  
- document.getElementById('kpi1A').textContent = fmtNum(sum(data,r=>r\[COL.aQty\]));  
+ document.getElementById('kpi1A').textContent = fmtNum(sum(data,r=>r[COL.aQty]));  
  document.getElementById('kpi1Cats').textContent = fmtNum(cats.length);  
  document.getElementById('kpi1CatsSub').textContent = `across ${items.length} item categor${items.length===1?'y':'ies'}`;  
   
@@ -693,14 +693,14 @@ function renderTab1(data){
  else {  
  const grp = {};  
  data.forEach(r => {  
- const k = r\[COL.status\] || 'Auction Pending';  
- grp\[k\] = (grp\[k\]||0) + 1;  
+ const k = r[COL.status] || 'Auction Pending';  
+ grp[k] = (grp[k]||0) + 1;  
  });  
  const labels = Object.keys(grp);  
- const vals = labels.map(k => grp\[k\]);  
+ const vals = labels.map(k => grp[k]);  
  CHARTS.chartStatus = new Chart(document.getElementById('chartStatus'),{  
  type:'doughnut',  
- data:{ labels, datasets:\[{ data:vals, backgroundColor: labels.map((_,i)=>BT.palette\[i%BT.palette.length\]), borderColor:'\#fff', borderWidth:2 }\] },  
+ data:{ labels, datasets:[{ data:vals, backgroundColor: labels.map((_,i)=>BT.palette[i%BT.palette.length]), borderColor:'#fff', borderWidth:2 }] },  
  options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',  
  plugins:{ legend:{position:'bottom', labels:{boxWidth:12, padding:12}},  
  tooltip:{ callbacks:{ label: ctx => `${ctx.label}: ${ctx.parsed} (${(ctx.parsed/vals.reduce((a,b)=>a+b,0)*100).toFixed(1)}%)` } } } }  
@@ -713,13 +713,13 @@ function renderTab1(data){
  else {  
  const grp = groupBy(data, COL.region);  
  const labels = Object.keys(grp).sort();  
- const counts = labels.map(k => grp\[k\].length);  
+ const counts = labels.map(k => grp[k].length);  
  CHARTS.chartByRegion = new Chart(document.getElementById('chartByRegion'),{  
  type:'bar',  
- data:{ labels, datasets:\[{ label:'Asset records', data:counts, backgroundColor:BT.green, borderRadius:6, maxBarThickness:48 }\] },  
+ data:{ labels, datasets:[{ label:'Asset records', data:counts, backgroundColor:BT.green, borderRadius:6, maxBarThickness:48 }] },  
  options:{ responsive:true, maintainAspectRatio:false,  
  plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${fmtNum(ctx.parsed.y)} records`}}},  
- scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'\#F3F4F6'}} } }  
+ scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'#F3F4F6'}} } }  
  });  
  }  
   
@@ -729,22 +729,22 @@ function renderTab1(data){
  else {  
  const grp = groupBy(data, COL.assetCat);  
  const labels = Object.keys(grp).sort();  
- const counts = labels.map(k => grp\[k\].length);  
+ const counts = labels.map(k => grp[k].length);  
  CHARTS.chartByCat = new Chart(document.getElementById('chartByCat'),{  
  type:'bar',  
- data:{ labels, datasets:\[{ label:'Asset records', data:counts, backgroundColor:BT.slate, borderRadius:6, maxBarThickness:48 }\] },  
+ data:{ labels, datasets:[{ label:'Asset records', data:counts, backgroundColor:BT.slate, borderRadius:6, maxBarThickness:48 }] },  
  options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',  
  plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${fmtNum(ctx.parsed.x)} records`}}},  
- scales:{ x:{beginAtZero:true, grid:{color:'\#F3F4F6'}}, y:{grid:{display:false}} } }  
+ scales:{ x:{beginAtZero:true, grid:{color:'#F3F4F6'}}, y:{grid:{display:false}} } }  
  });  
  }  
 }  
   
 /* ==================== TAB 2 ==================== */  
 function renderTab2(data){  
- const a = sum(data,r=>r\[COL.aQty\]);  
- const b = sum(data,r=>r\[COL.bQty\]);  
- const c = sum(data,r=>r\[COL.cQty\]);  
+ const a = sum(data,r=>r[COL.aQty]);  
+ const b = sum(data,r=>r[COL.bQty]);  
+ const c = sum(data,r=>r[COL.cQty]);  
  document.getElementById('kpi2A').textContent = fmtNum(a);  
  document.getElementById('kpi2B').textContent = fmtNum(b);  
  document.getElementById('kpi2C').textContent = fmtNum(c);  
@@ -764,14 +764,14 @@ function renderTab2(data){
  const labels = Object.keys(grp).sort();  
  CHARTS.chartReconCat = new Chart(document.getElementById('chartReconCat'),{  
  type:'bar',  
- data:{ labels, datasets:\[  
- { label:'A — Odoo Qty', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.aQty\])), backgroundColor:BT.green, borderRadius:4 },  
- { label:'B — Physical Lists', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.bQty\])), backgroundColor:BT.slate, borderRadius:4 },  
- { label:'C — Physical Count', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.cQty\])), backgroundColor:BT.amber, borderRadius:4 }  
- \]},  
+ data:{ labels, datasets:[  
+ { label:'A — Odoo Qty', data:labels.map(k=>sum(grp[k],r=>r[COL.aQty])), backgroundColor:BT.green, borderRadius:4 },  
+ { label:'B — Physical Lists', data:labels.map(k=>sum(grp[k],r=>r[COL.bQty])), backgroundColor:BT.slate, borderRadius:4 },  
+ { label:'C — Physical Count', data:labels.map(k=>sum(grp[k],r=>r[COL.cQty])), backgroundColor:BT.amber, borderRadius:4 }  
+ ]},  
  options:{ responsive:true, maintainAspectRatio:false,  
  plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:12}}},  
- scales:{ x:{grid:{display:false}, ticks:{font:{size:11}, autoSkip:false, maxRotation:25}}, y:{beginAtZero:true, grid:{color:'\#F3F4F6'}} } }  
+ scales:{ x:{grid:{display:false}, ticks:{font:{size:11}, autoSkip:false, maxRotation:25}}, y:{beginAtZero:true, grid:{color:'#F3F4F6'}} } }  
  });  
  }  
   
@@ -783,14 +783,14 @@ function renderTab2(data){
  const labels = Object.keys(grp).sort();  
  CHARTS.chartReconRegion = new Chart(document.getElementById('chartReconRegion'),{  
  type:'bar',  
- data:{ labels, datasets:\[  
- { label:'A — Odoo Qty', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.aQty\])), backgroundColor:BT.green, borderRadius:4 },  
- { label:'B — Physical Lists', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.bQty\])), backgroundColor:BT.slate, borderRadius:4 },  
- { label:'C — Physical Count', data:labels.map(k=>sum(grp\[k\],r=>r\[COL.cQty\])), backgroundColor:BT.amber, borderRadius:4 }  
- \]},  
+ data:{ labels, datasets:[  
+ { label:'A — Odoo Qty', data:labels.map(k=>sum(grp[k],r=>r[COL.aQty])), backgroundColor:BT.green, borderRadius:4 },  
+ { label:'B — Physical Lists', data:labels.map(k=>sum(grp[k],r=>r[COL.bQty])), backgroundColor:BT.slate, borderRadius:4 },  
+ { label:'C — Physical Count', data:labels.map(k=>sum(grp[k],r=>r[COL.cQty])), backgroundColor:BT.amber, borderRadius:4 }  
+ ]},  
  options:{ responsive:true, maintainAspectRatio:false,  
  plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:12}}},  
- scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'\#F3F4F6'}} } }  
+ scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'#F3F4F6'}} } }  
  });  
  }  
   
@@ -803,14 +803,14 @@ function renderTab2(data){
  // Aggregate per (Zone, Region, Asset Category, Asset Name)  
  const map = new Map();  
  data.forEach(r => {  
- const k = `${r\[COL.zone\]}||${r\[COL.region\]}||${r\[COL.assetCat\]}||${r\[COL.assetName\]}`;  
- const cur = map.get(k) || { zone:r\[COL.zone\], region:r\[COL.region\], assetCat:r\[COL.assetCat\], asset:r\[COL.assetName\], a:0, b:0, c:0 };  
- cur.a += r\[COL.aQty\] || 0;  
- cur.b += r\[COL.bQty\] || 0;  
- cur.c += r\[COL.cQty\] || 0;  
+ const k = `${r[COL.zone]}||${r[COL.region]}||${r[COL.assetCat]}||${r[COL.assetName]}`;  
+ const cur = map.get(k) || { zone:r[COL.zone], region:r[COL.region], assetCat:r[COL.assetCat], asset:r[COL.assetName], a:0, b:0, c:0 };  
+ cur.a += r[COL.aQty] || 0;  
+ cur.b += r[COL.bQty] || 0;  
+ cur.c += r[COL.cQty] || 0;  
  map.set(k, cur);  
  });  
- const rows = \[...map.values()\].map(r => ({...r, ab: r.a - r.b, bc: r.b - r.c, ca: r.c - r.a }));  
+ const rows = [...map.values()].map(r => ({...r, ab: r.a - r.b, bc: r.b - r.c, ca: r.c - r.a }));  
  rows.sort((x,y) => x.ca - y.ca); // shortages first  
  wrap.innerHTML = `<table class="data-table">  
  <thead><tr>  
@@ -839,15 +839,15 @@ function renderTab2(data){
   
 /* ==================== TAB 3 — AUCTION RECONCILIATION ==================== */  
 function renderTab3(data){  
- const usable = sum(data, r=>r\[COL.auctQtyUsable\]);  
- const scrap = sum(data, r=>r\[COL.auctQtyScrap\]);  
+ const usable = sum(data, r=>r[COL.auctQtyUsable]);  
+ const scrap = sum(data, r=>r[COL.auctQtyScrap]);  
  // Auction Qty Total in source may double-count usable+scrap or be standalone;  
  // present the source value rather than recompute, but show usable+scrap below.  
- const totalSource = sum(data, r=>r\[COL.auctQtyTotal\]);  
+ const totalSource = sum(data, r=>r[COL.auctQtyTotal]);  
  const totalCalc = usable + scrap;  
- const usableRows = data.filter(r => r\[COL.auctQtyUsable\] > 0).length;  
- const scrapRows = data.filter(r => r\[COL.auctQtyScrap\] > 0).length;  
- const auctionedRows = data.filter(r => r\[COL.auctQtyUsable\] > 0 || r\[COL.auctQtyScrap\] > 0 || r\[COL.auctQtyTotal\] > 0).length;  
+ const usableRows = data.filter(r => r[COL.auctQtyUsable] > 0).length;  
+ const scrapRows = data.filter(r => r[COL.auctQtyScrap] > 0).length;  
+ const auctionedRows = data.filter(r => r[COL.auctQtyUsable] > 0 || r[COL.auctQtyScrap] > 0 || r[COL.auctQtyTotal] > 0).length;  
   
  document.getElementById('kpi3Usable').textContent = fmtNum(usable);  
  document.getElementById('kpi3UsableSub').textContent = `${fmtNum(usableRows)} record${usableRows===1?'':'s'} carry usable qty`;  
@@ -868,25 +868,25 @@ function renderTab3(data){
  if(data.length===0){ noData(canvasId); return; }  
  const grp = groupBy(data, dimensionCol);  
  let labels = Object.keys(grp).sort();  
- const usableVals = labels.map(k => sum(grp\[k\], r=>r\[COL.auctQtyUsable\]));  
- const scrapVals = labels.map(k => sum(grp\[k\], r=>r\[COL.auctQtyScrap\]));  
+ const usableVals = labels.map(k => sum(grp[k], r=>r[COL.auctQtyUsable]));  
+ const scrapVals = labels.map(k => sum(grp[k], r=>r[COL.auctQtyScrap]));  
  // Skip rendering if nothing populated  
  if(usableVals.every(v=>v===0) && scrapVals.every(v=>v===0)){ noData(canvasId); return; }  
- CHARTS\[canvasId\] = new Chart(document.getElementById(canvasId), {  
+ CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {  
  type:'bar',  
- data:{ labels, datasets:\[  
+ data:{ labels, datasets:[  
  { label:'Usable Qty', data:usableVals, backgroundColor:BT.green, borderRadius:4 },  
  { label:'Scrap Qty', data:scrapVals, backgroundColor:BT.slate, borderRadius:4 }  
- \]},  
+ ]},  
  options:{ responsive:true, maintainAspectRatio:false, indexAxis: horizontal ? 'y' : 'x',  
  plugins:{ legend:{position:'bottom', labels:{boxWidth:12, padding:12}},  
- tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.parsed\[horizontal?'x':'y'\])}` } } },  
+ tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.parsed[horizontal?'x':'y'])}` } } },  
  scales: horizontal ? {  
- x:{ stacked:true, beginAtZero:true, grid:{color:'\#F3F4F6'} },  
+ x:{ stacked:true, beginAtZero:true, grid:{color:'#F3F4F6'} },  
  y:{ stacked:true, grid:{display:false} }  
  } : {  
  x:{ stacked:true, grid:{display:false}, ticks:{font:{size:11}, autoSkip:false, maxRotation:25} },  
- y:{ stacked:true, beginAtZero:true, grid:{color:'\#F3F4F6'} }  
+ y:{ stacked:true, beginAtZero:true, grid:{color:'#F3F4F6'} }  
  } }  
  });  
  }  
@@ -896,7 +896,7 @@ function renderTab3(data){
   
  // Auction detail table — only rows with auction qty  
  const wrap = document.getElementById('auctionTableWrap');  
- const auctioned = data.filter(r => r\[COL.auctQtyUsable\] > 0 || r\[COL.auctQtyScrap\] > 0 || r\[COL.auctQtyTotal\] > 0);  
+ const auctioned = data.filter(r => r[COL.auctQtyUsable] > 0 || r[COL.auctQtyScrap] > 0 || r[COL.auctQtyTotal] > 0);  
  if(auctioned.length === 0){  
  wrap.innerHTML = '<div class="empty-state">No records have auction quantities under the current filters.</div>';  
  return;  
@@ -904,18 +904,18 @@ function renderTab3(data){
  // Aggregate per (Zone, Region, Asset Category, Asset)  
  const map = new Map();  
  auctioned.forEach(r => {  
- const k = `${r\[COL.zone\]}||${r\[COL.region\]}||${r\[COL.assetCat\]}||${r\[COL.assetName\]}`;  
+ const k = `${r[COL.zone]}||${r[COL.region]}||${r[COL.assetCat]}||${r[COL.assetName]}`;  
  const cur = map.get(k) || {  
- zone:r\[COL.zone\], region:r\[COL.region\], cat:r\[COL.assetCat\], asset:r\[COL.assetName\],  
+ zone:r[COL.zone], region:r[COL.region], cat:r[COL.assetCat], asset:r[COL.assetName],  
  cQty:0, usable:0, scrap:0, total:0  
  };  
- cur.cQty += r\[COL.cQty\] || 0;  
- cur.usable += r\[COL.auctQtyUsable\] || 0;  
- cur.scrap += r\[COL.auctQtyScrap\] || 0;  
- cur.total += r\[COL.auctQtyTotal\] || 0;  
+ cur.cQty += r[COL.cQty] || 0;  
+ cur.usable += r[COL.auctQtyUsable] || 0;  
+ cur.scrap += r[COL.auctQtyScrap] || 0;  
+ cur.total += r[COL.auctQtyTotal] || 0;  
  map.set(k, cur);  
  });  
- const rows = \[...map.values()\].sort((a,b) => (b.usable+b.scrap) - (a.usable+a.scrap));  
+ const rows = [...map.values()].sort((a,b) => (b.usable+b.scrap) - (a.usable+a.scrap));  
  wrap.innerHTML = `<table class="data-table">  
  <thead><tr>  
  <th>Zone</th><th>Region</th><th>Asset Category</th><th>Asset Name</th>  
@@ -940,9 +940,9 @@ function renderTab3(data){
 /* ---------- Initial empty state ---------- */  
 function bootEmpty(){  
  setStatus('Awaiting data — upload a CSV to begin', false);  
- \['chartStatus','chartByRegion','chartByCat','chartReconCat','chartReconRegion','chartAuctByZone','chartAuctByCat','chartAuctByRegion'\].forEach(id => {  
+ ['chartStatus','chartByRegion','chartByCat','chartReconCat','chartReconRegion','chartAuctByZone','chartAuctByCat','chartAuctByRegion'].forEach(id => {  
  const c = document.getElementById(id);  
- if(c){ const ctx = c.getContext('2d'); ctx.fillStyle='\#9CA3AF'; ctx.font='13px Inter'; ctx.textAlign='center';  
+ if(c){ const ctx = c.getContext('2d'); ctx.fillStyle='#9CA3AF'; ctx.font='13px Inter'; ctx.textAlign='center';  
  ctx.fillText('Upload a CSV to populate this chart', c.width/2 || 200, c.height/2 || 120); }  
  });  
  document.getElementById('varianceTableWrap').innerHTML = '<div class="empty-state">Upload a CSV to view the variance detail.</div>';  

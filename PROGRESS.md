@@ -183,3 +183,14 @@ Own Brand payment 106% · Rice auction 164% · several categories genuine 0 paym
   `/source-data/`. Locked decisions D1–D6. Chose clean base shell. Wrote #REF! fix spec &
   full data model. Initialized repo on branch `claude/dashboard-files-review-t31098` and
   committed this checkpoint. **Next: Task 2 (fix xlsx) → Task 4/3 (build).**
+
+- **2026-07-06 (session 2)** — BUILT. Produced `deliverables/All Zones Consolidation - FIXED.xlsx`
+  (all 15 #REF! totals now compute — verified). Wrote `build/build_dashboard.py` (the re-runnable
+  "refresh" step) and generated `deliverables/USC_Dashboard_v2.html` (1.69 MB, 11,782 rows baked):
+  new **Category Milestone Overview** first tab (9 categories × 4 stages, CSS donut rings +
+  planned/actual bars, >100% anomalies flagged), full data feeds all 4 existing tabs,
+  **Payment & Lifting un-marked** with real KPIs/charts/table, BT brand palette (lime/mint/charcoal)
+  + Calibri fonts applied, manual-upload replaced by embedded JSON auto-load. `node --check` on the
+  app script = OK. **NOT YET DONE:** (a) browser render verification (Playwright), (b) upload the
+  fixed xlsx + v2 HTML to the Drive folder, (c) enable GitHub Pages, (d) render a Project Updates/News
+  panel (data is embedded as `DASH_UPDATES` but no panel drawn yet), (e) user sign-off on palette.
