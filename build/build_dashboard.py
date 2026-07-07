@@ -316,7 +316,7 @@ sub(r"Upload Excel / CSV", "Replace data (optional)", label="upload label")
 
 # 8) render calls: add tab0 + tab4
 sub(r"renderTab3\(data\);",
-    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);",
+    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);\n  renderZoneScorecard(data);",
     label="renderAll calls")
 
 # 8b) Brand-align the Chart.js palette (lime accent, matching tab0/tab4)
@@ -521,6 +521,35 @@ function renderTab6(data){
     `</tbody></table>`;
 }
 
+/* ==================== ZONE SCORECARD (Overall tab) ==================== */
+function pctCell(p){
+  if(p===null||isNaN(p)) return '<td style="text-align:right;color:#9CA3AF">—</td>';
+  const w=Math.max(0,Math.min(100,p)); const anom=p>100;
+  const col=anom?'var(--bt-amber)':(p>=66?'#5E7A00':(p>=33?'#8FB400':'#B8860B'));
+  return '<td style="text-align:right;position:relative;min-width:78px">'+
+    '<div style="position:absolute;left:0;top:3px;bottom:3px;width:'+w+'%;background:var(--bt-mint);opacity:.7;border-radius:3px"></div>'+
+    '<span style="position:relative;font-weight:700;color:'+col+'">'+p.toFixed(0)+'%'+(anom?' ▲':'')+'</span></td>';
+}
+function zStat(rows){
+  const a=sum(rows,r=>r[COL.aQty]),c=sum(rows,r=>r[COL.cQty]),au=sum(rows,r=>r[COL.auctQtyTotal]),
+        li=sum(rows,r=>r[COL.liftedQty]),val=sum(rows,r=>r[COL.auctValueTotal]),pay=sum(rows,r=>r[COL.payRs]);
+  return {n:rows.length, pv:a?c/a*100:null, au:c?au/c*100:null, li:au?li/au*100:null, pay:val?pay/val*100:null, payRs:pay};
+}
+function renderZoneScorecard(data){
+  const el=document.getElementById('zoneScorecard'); if(!el) return;
+  const g=groupBy(data,COL.zone); const zones=Object.keys(g).sort();
+  const row=(name,s,foot)=>`<tr${foot?' style="background:#F3F4F6;font-weight:700"':''}><td><b>${escapeHtml(name)}</b></td>`+
+    `<td style="text-align:right">${fmtNum(s.n)}</td>${pctCell(s.pv)}${pctCell(s.au)}${pctCell(s.li)}${pctCell(s.pay)}`+
+    `<td style="text-align:right">${fmtNum(s.payRs)}</td></tr>`;
+  let h='<table class="data-table"><thead><tr><th>Zone</th><th style="text-align:right">Records</th>'+
+    '<th style="text-align:right">Phys. Verif.</th><th style="text-align:right">Auction</th>'+
+    '<th style="text-align:right">Lifting</th><th style="text-align:right">Payment</th>'+
+    '<th style="text-align:right">Payment (Rs.)</th></tr></thead><tbody>';
+  zones.forEach(z=>{ h+=row(z,zStat(g[z]),false); });
+  h+='</tbody><tfoot>'+row('All Zones',zStat(data),true)+'</tfoot></table>';
+  el.innerHTML=h;
+}
+
 /* ==================== PROJECT UPDATES & NEWS ==================== */
 function renderUpdates(){
   const recs = (window.DASH_UPDATES && DASH_UPDATES.records) || [];
@@ -541,7 +570,12 @@ function renderUpdates(){
 sub(r"/\* ---------- Initial empty state ---------- \*/", NEW_JS, label="inject tab0/tab4 js")
 
 # 10b) Project Updates & News panel on the Overall tab (tab1)
-PANEL = ('\n          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">\n'
+PANEL = ('\n          <div class="chart-card mt-4">\n'
+         '            <div class="chart-title">Zone Scorecard &mdash; Milestone Progress by Zone</div>\n'
+         '            <div class="chart-sub">Each zone&rsquo;s completion across the four stages (respects the global slicers). The tinted bar scales with %; <span class="dq-flag">&#9650;</span> marks &gt;100% source anomalies.</div>\n'
+         '            <div id="zoneScorecard" class="data-table-wrap" style="max-height:none;"></div>\n'
+         '          </div>\n'
+         '          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">\n'
          '            <div class="chart-card"><div class="chart-title">Latest News</div>'
          '<div class="chart-sub">Dated updates from the Project Updates workbook</div>'
          '<div id="newsList"></div></div>\n'

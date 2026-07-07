@@ -14,7 +14,7 @@ Quantity Reconciliation · Auction Reconciliation · Payment & Lifting · **Paym
 | # | As USC CEO, I expect… | How the dashboard delivers | Verdict |
 |---|------------------------|----------------------------|---------|
 | 1 | **A bird's-eye view of the whole programme** in 10 seconds | *Category Milestone Overview* (tab 1): every asset category × the 4 stages (Physical Verification → Auction → Lifting → Payment) as % rings + planned-vs-actual bars. *Overall Project Status* adds headline KPIs (9 zones, 70 regions, 11,782 records, 2.95 M Odoo qty). | ✅ Addressed |
-| 2 | **Zone- and Region-wise** performance | Global **Zone → Region slicers** cascade across *every* tab; plus per-Zone and per-Region charts on Overall, Quantity, Auction, and Payment tabs. Pick a zone → the whole dashboard (incl. milestone rings) recomputes. | ✅ Addressed (via slicers + per-zone/region charts). ⚠️ No single "zone league table" yet — see gap G1. |
+| 2 | **Zone- and Region-wise** performance | A **Zone Scorecard** on the Overall tab (every zone × the 4 milestone %s + payment, ranked, with an All-Zones total) gives the one-look view; global **Zone → Region slicers** cascade across *every* tab; plus per-Zone/Region charts. Pick a zone → the whole dashboard (incl. milestone rings) recomputes. | ✅ Addressed (Zone Scorecard + slicers + per-zone/region charts). |
 | 3 | **Money recovered vs. expected** | *Payment & Lifting*: Payment received **Rs 968.3 M** vs Total Auction Value **Rs 17.12 bn** booked (5.7%) vs Reserve Rs 5.03 M; Lifted 930,063 units, Balance 845,605. | ✅ Addressed (see also DQ note on the Rs 17.1 bn figure). |
 | 4 | **Who bought what, and did they pay?** — bidder name, category won, DD no., DD date, DD amount | **Payments & DD Detail (tab 6)**: per-bidder summary — Winning Bidder · Zone(s) · Categories Won · DD No(s). · Payment Date(s) · **Total Payment (DD amount)** · line count. 24 unique bidders; top bidders & payment-by-category charts. | ✅ Addressed (dedicated tab). ⚠️ DD-number granularity limited by source — see G2. |
 | 5 | **Are the numbers trustworthy? Show me the exceptions** | **Anomalies (tab 7)** — a dedicated section: 1,600 flagged records across *Lifted > Auctioned* (983), *Auctioned > Counted* (227), *Payment > Auction Value* (182), *Negative Balance*; by-type chart + line-level detail with the conflicting values. Anomalies are also flagged inline (▲) on the milestone rings and explained in a Data-Quality note. | ✅ Addressed (dedicated tab **+** inline flags). |
@@ -52,9 +52,9 @@ Rs 212.4 M). Summary KPIs + top-bidder chart sit above the detail.
 A good validator flags its own limits. These are **source-data** constraints, not dashboard bugs —
 the dashboard surfaces them faithfully:
 
-- **G1 — No single "zone scorecard" table.** Zone insight today is via slicers + charts. *Recommend*
-  a one-look table: each zone × the 4 milestone %s, ranked, so lagging zones jump out without
-  clicking. (~30 min to add.)
+- **G1 — Zone scorecard — ✅ DONE.** Added a Zone Scorecard on the Overall tab: each zone × the 4
+  milestone %s + payment (Rs), ranked, with an All-Zones total row and >100% anomaly flags — lagging
+  zones (Quetta, Faisalabad) and anomalies (Peshawar auction 762%, Karachi payment 381%) jump out.
 - **G2 — DD detail is thin in the source.** The "DD No." column is mostly blank or holds a payment
   *mode* ("Cheque (JS Bank)", "cdr") rather than a draft number, and payments are booked at
   asset-line level. So per-*individual-DD* amount/date can't be cleanly separated — we aggregate to

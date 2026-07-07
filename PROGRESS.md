@@ -300,3 +300,17 @@ Added per CEO request:
   Negative Balance. **1,600 flagged records**, each with the conflicting values, for USC to reconcile.
 - Baked two more Database cols (AB DD No., Z Payment Date). Now **7 tabs**; re-verified in
   Chromium (0 errors), still fully self-contained. docs/index.html + screenshots refreshed.
+
+## 12. Zone Scorecard (session 6 — closes CEO gap G1)
+
+Added a **Zone Scorecard** to the Overall tab: 9 zones × the 4 milestone %s (Phys. Verif., Auction,
+Lifting, Payment) with tinted % bars + >100% ▲ flags, a Records and Payment (Rs) column, and an
+All-Zones total row (which doubles as the blended headline — Verif 61%, Auction 111%▲, Lifting 47%,
+Payment 6%). Slicer-aware. Re-verified in Chromium (9 rows + total, 0 errors); docs + CEO_REVIEW
+updated (G1 now ✅). Dashboard remains self-contained.
+
+### Coverage vs CEO review (final)
+- Bird's-eye ✅ · Zone/Region ✅ (Scorecard + slicers) · Anomalies ✅ (dedicated tab) ·
+  Payments-by-bidder ✅ (dedicated tab). Remaining gaps G2/G3/G5 are **source-data** limitations
+  (thin DD fields, inflated auction value, no historical snapshots) that the TPV correctly exposes;
+  G4 headline % is served by the Zone Scorecard's All-Zones row.
