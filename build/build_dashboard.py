@@ -82,7 +82,8 @@ def C(row, letter): return row[ci(letter) - 1]
 # fixed emit order -> mirrored in the browser bootstrap
 ORDER = ["zone","region","itemCat","assetCat","assetName","aQty","bQty","cQty",
          "status","auctQtyUsable","auctQtyScrap","auctQtyTotal","reservePriceTotal",
-         "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty","bidder","auctionDate"]
+         "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty","bidder","auctionDate",
+         "ddNo","payDate"]
 
 def _dstr(v):
     if v is None or v == "": return ""
@@ -112,6 +113,7 @@ for row in it:
         num(C(row,"R")), num(C(row,"Y")), num(C(row,"AA")),
         num(C(row,"AD")), num(C(row,"AE")), num(C(row,"AF")),
         _dstr(C(row,"U")), _dstr(C(row,"T")),
+        _dstr(C(row,"AB")), _dstr(C(row,"Z")),
     ]
     rows_out.append(rec)
 
@@ -143,6 +145,13 @@ def sub(pattern, repl, flags=0, count=1, label=""):
     new, n = re.subn(pattern, repl, html, count=count, flags=flags)
     assert n == count, f"anchor NOT found ({n}/{count}): {label or pattern[:60]}"
     html = new
+
+def lit(old, new, count=1, label=""):
+    """Plain (non-regex) literal replace with an occurrence assertion."""
+    global html
+    found = html.count(old)
+    assert found == count, f"lit anchor found {found}x (want {count}): {label or old[:50]}"
+    html = html.replace(old, new, count)
 
 # 0) Make the page self-contained: inline Chart.js (vendored from npm) so the
 #    dashboard works offline / behind firewalls, and drop the now-dead upload CDNs
@@ -262,6 +271,40 @@ TAB3_PRICING = ('<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">\n'
 sub(r'<div class="awaiting-card" style="padding:24px;">.*?</section>',
     lambda m: TAB3_PRICING, flags=re.DOTALL, label="tab3 pricing card")
 
+# 5c) new nav buttons for Payments (tab5) + Anomalies (tab6)
+lit('<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>',
+    '<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>\n'
+    '        <button class="tab-btn" data-tab="tab5">Payments &amp; DD Detail</button>\n'
+    '        <button class="tab-btn" data-tab="tab6">Anomalies</button>',
+    label="nav tab5/6")
+
+# 5d) new sections for Payments + Anomalies (inserted before </main>)
+TAB56 = """        <section id="tab5" class="tab-pane">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            <div class="kpi-card"><div class="kpi-label">Total DD / Payment (Rs.)</div><div id="kpi5Amt" class="kpi-value">—</div><div class="kpi-sub">Sum of payments received</div></div>
+            <div class="kpi-card"><div class="kpi-label">Payment Line Items</div><div id="kpi5Recs" class="kpi-value">—</div><div class="kpi-sub">Asset lines carrying a payment</div></div>
+            <div class="kpi-card"><div class="kpi-label">Unique Bidders</div><div id="kpi5Bidders" class="kpi-value">—</div><div class="kpi-sub">Distinct winning bidders</div></div>
+            <div class="kpi-card"><div class="kpi-label">Unique DD Numbers</div><div id="kpi5DDs" class="kpi-value">—</div><div class="kpi-sub">Distinct demand drafts</div></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+            <div class="chart-card"><div class="chart-title">Top Bidders by Payment</div><div class="chart-sub">Highest total payment received (Rs.)</div><div style="position:relative;height:340px;"><canvas id="chartTopBidders"></canvas></div></div>
+            <div class="chart-card"><div class="chart-title">Payment by Asset Category</div><div class="chart-sub">Total payment received per category (Rs.)</div><div style="position:relative;height:340px;"><canvas id="chartPayByCat"></canvas></div></div>
+          </div>
+          <div class="chart-card"><div class="chart-title">Payments Received — by Winning Bidder</div><div class="chart-sub">Bidder, asset categories won, DD number(s), payment date(s) and total amount. Source records payments at asset-line level, so totals sum all of a bidder's lines — verify against physical DDs where an amount repeats.</div><div id="paymentsTableWrap" class="data-table-wrap"></div></div>
+        </section>
+        <section id="tab6" class="tab-pane">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            <div class="kpi-card"><div class="kpi-label">Anomalous Records</div><div id="kpi6Total" class="kpi-value">—</div><div class="kpi-sub">Rows failing a consistency check</div></div>
+            <div class="kpi-card"><div class="kpi-label">Lifted &gt; Auctioned</div><div id="kpi6Lift" class="kpi-value">—</div><div class="kpi-sub">Over-lifting</div></div>
+            <div class="kpi-card"><div class="kpi-label">Payment &gt; Auction Value</div><div id="kpi6Pay" class="kpi-value">—</div><div class="kpi-sub">Over-payment vs booked value</div></div>
+            <div class="kpi-card"><div class="kpi-label">Auctioned &gt; Counted</div><div id="kpi6Auct" class="kpi-value">—</div><div class="kpi-sub">Sold more than counted</div></div>
+          </div>
+          <div class="chart-card"><div class="chart-title">Anomalies by Type</div><div class="chart-sub">Count of records per anomaly category (respects the global slicers)</div><div style="position:relative;height:300px;"><canvas id="chartAnomTypes"></canvas></div></div>
+          <div class="chart-card mt-4"><div class="chart-title">Anomaly Detail</div><div class="chart-sub">Every flagged record with the conflicting values (top 500). These are source data-quality issues for USC to reconcile — figures are shown exactly as recorded.</div><div id="anomalyTableWrap" class="data-table-wrap"></div></div>
+        </section>
+"""
+lit('</main>', TAB56 + '        </main>', label="tab5/6 sections")
+
 # 6) COL: add auctValueTotal + reservePriceTotal
 sub(r"balanceQty:'Balance Qty to be lifted'",
     "balanceQty:'Balance Qty to be lifted',\n  auctValueTotal:'Total Auction Value', reservePriceTotal:'Total Reserve Price'",
@@ -273,7 +316,7 @@ sub(r"Upload Excel / CSV", "Replace data (optional)", label="upload label")
 
 # 8) render calls: add tab0 + tab4
 sub(r"renderTab3\(data\);",
-    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);",
+    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);",
     label="renderAll calls")
 
 # 8b) Brand-align the Chart.js palette (lime accent, matching tab0/tab4)
@@ -399,6 +442,83 @@ function renderAuctionPricing(data){
   set('kpi3Bidder',fmtNum(bid)); set('kpi3Date',fmtNum(dat));
   const bs=document.getElementById('kpi3BidderSub'); if(bs) bs.textContent = data.length? (bid/data.length*100).toFixed(1)+'% of records' : '—';
   const ds=document.getElementById('kpi3DateSub'); if(ds) ds.textContent = data.length? (dat/data.length*100).toFixed(1)+'% of records' : '—';
+}
+
+/* ==================== TAB 5 — PAYMENTS (BIDDER & DD DETAIL) ==================== */
+function renderTab5(data){
+  const clean = s => { s=(s==null?'':s).toString().trim(); return (s===''||s==='0')?'':s; };
+  const pays = data.filter(r => (r[COL.payRs]||0) > 0 || clean(r[COL.ddNo]));
+  const amt = sum(pays, r=>r[COL.payRs]);
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  set('kpi5Amt','Rs '+fmtNum(amt)); set('kpi5Recs',fmtNum(pays.length));
+  set('kpi5Bidders',fmtNum(new Set(pays.map(r=>clean(r[COL.bidder])).filter(Boolean)).size));
+  set('kpi5DDs',fmtNum(new Set(pays.map(r=>clean(r[COL.ddNo])).filter(Boolean)).size));
+  destroyChart('chartTopBidders');
+  if(pays.length){
+    const byB={}; pays.forEach(r=>{const k=((r[COL.bidder]||'').trim())||'(Unnamed bidder)'; byB[k]=(byB[k]||0)+(r[COL.payRs]||0);});
+    const top=Object.entries(byB).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    CHARTS.chartTopBidders=new Chart(document.getElementById('chartTopBidders'),{type:'bar',
+      data:{labels:top.map(x=>x[0]),datasets:[{label:'Payment Rs.',data:top.map(x=>x[1]),backgroundColor:BT.green,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'Rs '+fmtNum(ctx.parsed.x)}}},scales:{x:{beginAtZero:true,grid:{color:'#F3F4F6'}},y:{grid:{display:false}}}}});
+  } else noData('chartTopBidders');
+  destroyChart('chartPayByCat');
+  if(pays.length){
+    const g=groupBy(pays,COL.assetCat); const labels=Object.keys(g).sort();
+    CHARTS.chartPayByCat=new Chart(document.getElementById('chartPayByCat'),{type:'bar',
+      data:{labels,datasets:[{label:'Payment Rs.',data:labels.map(k=>sum(g[k],r=>r[COL.payRs])),backgroundColor:BT.slate,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'Rs '+fmtNum(ctx.parsed.y)}}},scales:{x:{grid:{display:false},ticks:{maxRotation:25,font:{size:10}}},y:{beginAtZero:true,grid:{color:'#F3F4F6'}}}}});
+  } else noData('chartPayByCat');
+  // Payments are recorded at asset-line level in the source; aggregate to one row per
+  // winning bidder so the CEO sees "payments received from each bidder", not duplicated lines.
+  const wrap=document.getElementById('paymentsTableWrap');
+  const agg=new Map();
+  pays.forEach(r=>{ const b=clean(r[COL.bidder])||'(Unnamed bidder)';
+    const c=agg.get(b)||{bidder:b,total:0,lines:0,cats:new Set(),zones:new Set(),dds:new Set(),dates:new Set()};
+    c.total+=r[COL.payRs]||0; c.lines++;
+    if(clean(r[COL.assetCat])) c.cats.add(r[COL.assetCat]);
+    if(clean(r[COL.zone])) c.zones.add(r[COL.zone]);
+    if(clean(r[COL.ddNo])) c.dds.add(clean(r[COL.ddNo]));
+    if(clean(r[COL.payDate])) c.dates.add(clean(r[COL.payDate]));
+    agg.set(b,c); });
+  const rows=[...agg.values()].sort((a,b)=>b.total-a.total);
+  const j=s=>[...s].join(', ')||'—';
+  wrap.innerHTML = rows.length===0 ? '<div class="empty-state">No payment or DD records under the current filters.</div>' :
+    `<table class="data-table"><thead><tr><th>Winning Bidder</th><th>Zone(s)</th><th>Asset Categor(ies) Won</th><th>DD No(s).</th><th>Payment Date(s)</th><th style="text-align:right">Total Payment (Rs.)</th><th style="text-align:right">Lines</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td>${escapeHtml(r.bidder)}</td><td>${escapeHtml(j(r.zones))}</td><td>${escapeHtml(j(r.cats))}</td><td>${escapeHtml(j(r.dds))}</td><td>${escapeHtml(j(r.dates))}</td><td style="text-align:right" class="pos">${fmtNum(r.total)}</td><td style="text-align:right">${fmtNum(r.lines)}</td></tr>`).join('')+
+    `</tbody></table>`;
+}
+
+/* ==================== TAB 6 — ANOMALIES ==================== */
+function anomaliesOf(r){
+  const out=[];
+  const lift=r[COL.liftedQty]||0, auc=r[COL.auctQtyTotal]||0, cnt=r[COL.cQty]||0,
+        pay=r[COL.payRs]||0, val=r[COL.auctValueTotal]||0, bal=r[COL.balanceQty]||0;
+  if(lift>auc && lift>0) out.push(['Lifted > Auctioned','Lifted '+fmtNum(lift)+' vs Auctioned '+fmtNum(auc)]);
+  if(pay>val && val>0)   out.push(['Payment > Auction Value','Paid Rs '+fmtNum(pay)+' vs Value Rs '+fmtNum(val)]);
+  if(auc>cnt && cnt>0)   out.push(['Auctioned > Counted','Auctioned '+fmtNum(auc)+' vs Count '+fmtNum(cnt)]);
+  if(bal<0)              out.push(['Negative Balance','Balance qty '+fmtNum(bal)]);
+  return out;
+}
+function renderTab6(data){
+  const flagged=[]; const byType={};
+  data.forEach(r=>{ anomaliesOf(r).forEach(([t,d])=>{ flagged.push({zone:r[COL.zone],region:r[COL.region],cat:r[COL.assetCat],asset:r[COL.assetName],type:t,detail:d}); byType[t]=(byType[t]||0)+1; }); });
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  set('kpi6Total',fmtNum(flagged.length));
+  set('kpi6Lift',fmtNum(byType['Lifted > Auctioned']||0));
+  set('kpi6Pay',fmtNum(byType['Payment > Auction Value']||0));
+  set('kpi6Auct',fmtNum(byType['Auctioned > Counted']||0));
+  destroyChart('chartAnomTypes');
+  const tl=Object.keys(byType);
+  if(tl.length){
+    CHARTS.chartAnomTypes=new Chart(document.getElementById('chartAnomTypes'),{type:'bar',
+      data:{labels:tl,datasets:[{label:'Records',data:tl.map(k=>byType[k]),backgroundColor:BT.amber,borderRadius:6,maxBarThickness:70}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtNum(ctx.parsed.y)+' records'}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#F3F4F6'}}}}});
+  } else noData('chartAnomTypes');
+  const wrap=document.getElementById('anomalyTableWrap');
+  wrap.innerHTML = flagged.length===0 ? '<div class="empty-state">No anomalies under the current filters. &#10003;</div>' :
+    `<table class="data-table"><thead><tr><th>Zone</th><th>Region</th><th>Asset Category</th><th>Asset</th><th>Anomaly</th><th>Detail (conflicting values)</th></tr></thead><tbody>`+
+    flagged.slice(0,500).map(f=>`<tr><td>${escapeHtml(f.zone)}</td><td>${escapeHtml(f.region)}</td><td>${escapeHtml(f.cat)}</td><td>${escapeHtml(f.asset)}</td><td><span style="color:var(--bt-amber);font-weight:700">${escapeHtml(f.type)}</span></td><td>${escapeHtml(f.detail)}</td></tr>`).join('')+
+    `</tbody></table>`;
 }
 
 /* ==================== PROJECT UPDATES & NEWS ==================== */

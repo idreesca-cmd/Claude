@@ -30,7 +30,7 @@ try {
   }));
   console.log('DIAG', JSON.stringify(diag, null, 2));
 
-  const tabs = [['tab0','Category Milestone'],['tab1','Overall'],['tab2','Quantity'],['tab3','Auction'],['tab4','Payment']];
+  const tabs = [['tab0','Category Milestone'],['tab1','Overall'],['tab2','Quantity'],['tab3','Auction'],['tab4','Payment'],['tab5','Payments-DD'],['tab6','Anomalies']];
   for (const [t,label] of tabs) {
     await page.click(`.tab-btn[data-tab="${t}"]`);
     await page.waitForTimeout(900);

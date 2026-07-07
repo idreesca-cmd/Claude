@@ -285,3 +285,18 @@ QA'd all 5 tabs in-browser (screenshots in docs/screenshots) and fixed:
 - **Added a Data Quality & Methodology notes card** to tab0 (stage formulas + explanation of the
   >100% ▲ anomalies) — professional context for the TPV client.
 Re-verified: 0 console errors, JS valid, still zero external requests. docs/index.html refreshed.
+
+## 11. Two new tabs (session 5 — CEO review response)
+
+Added per CEO request:
+- **Payments & DD Detail (tab5)** — bidder-level payment reconciliation. KPIs (Total DD/Payment
+  Rs 968.3M, line items, **24 unique bidders**, unique DDs), Top-Bidders + Payment-by-Category
+  charts, and a **per-bidder summary table** (Bidder | Zone(s) | Categories Won | DD No(s) |
+  Payment Date(s) | Total Payment | Lines). Source records payments at asset-line level, so the
+  table aggregates to one row per bidder (23 bidders; e.g. Sain Abdul Hakeem Rs 474.5M/255 lines)
+  instead of thousands of duplicated lines — with a caveat to verify against physical DDs.
+- **Anomalies (tab6)** — dedicated data-quality section. KPIs + by-type chart + detail table.
+  Checks: Lifted>Auctioned (983), Auctioned>Counted (227), Payment>Auction Value (182),
+  Negative Balance. **1,600 flagged records**, each with the conflicting values, for USC to reconcile.
+- Baked two more Database cols (AB DD No., Z Payment Date). Now **7 tabs**; re-verified in
+  Chromium (0 errors), still fully self-contained. docs/index.html + screenshots refreshed.
