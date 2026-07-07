@@ -121,10 +121,12 @@ for row in it:
 idx = {k: i for i, k in enumerate(ORDER)}
 def gsum(k): return sum(r[idx[k]] for r in rows_out)
 SOURCE_PATH_LABEL = (r"G:\Shared drives\Clients (except pvt ltd co)\Advisory\Clients - Idrees"
-                      r"\Utility Stores Corporation - FAR Auction\USC Dashboard\USD DB MIK")
-_now = datetime.datetime.now(datetime.timezone.utc)
+                      r"\Utility Stores Corporation - FAR Auction\USC Dashboard\USD DB MIK"
+                      r"\USC_Dashboard_Data_Source_File.xlsx")
+PKT = datetime.timezone(datetime.timedelta(hours=5))  # Pakistan Standard Time, no DST
+_now = datetime.datetime.now(PKT)
 meta = {
-    "refreshDate": _now.strftime("%Y-%m-%d %H:%M UTC"),
+    "refreshDate": _now.strftime("%Y-%m-%d %H:%M PKT"),
     "sourcePath": SOURCE_PATH_LABEL,
     "rowCount": len(rows_out),
     "zones": sorted({r[0] for r in rows_out}),
@@ -355,7 +357,7 @@ _cleanrow_repl = (
     " return out;")
 sub(r"setStatus\(`\$\{RAW\.length\.toLocaleString\(\)\} records loaded from \$\{filename\}\$\{sheetSuffix\}`, true\);",
     lambda m: ("setStatus(`${RAW.length.toLocaleString()} records loaded from ${filename}${sheetSuffix}"
-               " · last synced ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`, true);"),
+               " · last synced ${new Date(Date.now()+5*3600*1000).toISOString().slice(0,16).replace('T',' ')} PKT`, true);"),
     label="upload status timestamp")
 sub(r"\[COL\.zone, COL\.region, COL\.itemCat, COL\.assetCat, COL\.assetName, COL\.status, COL\.bidder, COL\.ddNo\]\s*\n\s*\.forEach\(c => \{ out\[c\] = \(out\[c\]===null\|\|out\[c\]===undefined\) \? '' : String\(out\[c\]\)\.trim\(\); \}\);\s*\n\s*return out;",
     lambda m: _cleanrow_repl, label="cleanRow normalization")
@@ -676,7 +678,7 @@ BOOT = r"""(function(){
   hydrateSlicers(); renderAll(); renderUpdates();
   const d = meta.meta.refreshDate || '';
   const sp = document.getElementById('sourcePath');
-  if(sp) sp.textContent = 'Source: ' + (meta.meta.sourcePath || '');
+  if(sp){ sp.textContent = 'Source: ' + (meta.meta.sourcePath || ''); sp.title = meta.meta.sourcePath || ''; }
   setStatus(`Live · ${meta.meta.rowCount.toLocaleString()} records · last synced ${d}`, true);
 })();"""
 sub(r"bootEmpty\(\);", BOOT, label="bootstrap")

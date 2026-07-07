@@ -384,3 +384,41 @@ remains for instant on-demand refresh in between automated runs.
 
 ## Automated refresh log
 (Entries appended here by the automated Routine after each successful publish.)
+
+## 15. PKT time, canonical named source file, robust automation (session 9)
+
+Addressed three follow-up requests:
+
+1. **Timezone → Pakistan Standard Time.** All "last synced"/"refreshed" timestamps (both the
+   baked-build boot path and the manual "Refresh Data" upload path) now show PKT (UTC+5, no DST)
+   instead of UTC, e.g. `Live · 11,782 records · last synced 2026-07-07 18:29 PKT`.
+
+2. **Honesty check on the source path.** The user asked whether the displayed Drive path was
+   verified — answer: no, it was the user's own text, inserted verbatim as a label; Drive's API
+   doesn't expose local mapped-drive letters (`G:\...`) so I can't independently confirm it against
+   the file ID I actually fetch by. Flagged this plainly rather than asserting false certainty.
+
+3. **Canonical named source file.** Created `USC_Dashboard_Data_Source_File.xlsx` in the "USD DB
+   MIK" Drive folder via a **server-side `copy_file`** of the then-current `All Zones
+   Consolidation.xlsx` (id `1s_Nf1JvWNJg16J8iY-z2wWdeyeyzN5Um`) → new file id
+   `1NB7ZL1fAhCj5cCCadWTccKF56u5AOSKO`. Chose `copy_file` specifically to avoid the known
+   base64-upload size ceiling (confirmed in an earlier session: ~1.2–2.5MB files fail to upload
+   via `create_file`'s inline-base64 parameter) — a Drive-to-Drive copy has no such limit since
+   the bytes never pass through my context. **Caveat flagged to user:** this copy inherits
+   whatever the live file currently contains, which likely still has the `#REF!` bug (§4) unless
+   already fixed — recommended they paste in the corrected formulas or re-upload the fixed copy
+   under this same name. I could not independently re-verify the copy's formula contents (a full
+   re-download of a file this size risks the same truncation issue documented in §5/HTML outline).
+   - Updated the dashboard's displayed source path to include the file name:
+     `...\USD DB MIK\USC_Dashboard_Data_Source_File.xlsx`, with a hover tooltip showing the
+     untruncated path.
+   - **Replaced the automated Routine** (deleted `trig_01PKnUMFPyRfvfKTmvnjsSp2`, created
+     `trig_01XhvCr9N6sjhHaY26je5ou7`, same daily-03:15-UTC schedule) so it looks up the source
+     file **by title** (`USC_Dashboard_Data_Source_File.xlsx` in folder
+     `1PFSMyIYp3ZoMEDs7aL-CsSYrreyKW0zn`) instead of a hardcoded file ID — stays correct even if
+     the file is later replaced/re-uploaded under the same name with a new ID. If the named file
+     is ever missing, the job stops and does nothing rather than silently falling back to a
+     different file.
+
+Re-verified full build after all three changes: 11,782 rows, Payment Rs. unchanged, 0 console
+errors, still zero external CDN references, `node --check` clean.
