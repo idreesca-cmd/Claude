@@ -314,3 +314,44 @@ updated (G1 now ✅). Dashboard remains self-contained.
   Payments-by-bidder ✅ (dedicated tab). Remaining gaps G2/G3/G5 are **source-data** limitations
   (thin DD fields, inflated auction value, no historical snapshots) that the TPV correctly exposes;
   G4 headline % is served by the Zone Scorecard's All-Zones row.
+
+## 13. Working "Refresh Data" button (session 7)
+
+User asked for a refresh mechanism where "each refresh fetch[es] the updated data." A true
+client-side live-fetch from Drive would require making the source workbook link-shared
+("Anyone with the link") plus a Google Cloud API key (user-managed infra outside my tool
+access) -- flagged as a real trade-off (exposes raw bidder/payment data to anyone with the
+link) rather than silently building it. Instead, restored a **fully working, instant,
+client-side "Refresh Data" button**:
+
+- Vendored **SheetJS (xlsx 0.18.5)** and **PapaParse 5.4.1** via npm and inlined them (same
+  pattern as Chart.js/Tailwind) -- the button was previously present but dead (parser libs had
+  been stripped for self-containment). Dashboard is still 100% self-contained (0 external
+  requests), now ~3.1 MB.
+- **Found and fixed 3 real bugs** while testing the upload path end-to-end in headless
+  Chromium (not just eyeballed):
+  1. `pickBestSheet()` matched any sheet *named* like "*recon*" before checking headers --
+     the workbook's new "Reconciliation Summary" tab (2-col totals, not data) was winning over
+     the actual "Database" sheet. Reordered: header-signature match now takes priority over
+     the name-regex fallback.
+  2. `COL.bidder` was `'Auction To Bidder'` (old embedded-CSV header) but the real Database
+     sheet column is `'Winner Bidder Name'` -- fixed to match, so tab 6 (Payments & DD)
+     populates correctly on upload.
+  3. `COL.balanceQty` was `'Balance Qty to be lifted'` vs. the real header `'Balance Qty'` --
+     fixed likewise.
+  4. Ported the Python build's zone/category normalization (Sukkur/SUKKUR merge, ERP variant
+     merge, etc.) into `cleanRow()` in JS, so a manual refresh renders identically to the
+     baked build (9 zones, 9 categories) instead of showing raw duplicates.
+- Relabeled the button "Refresh Data (upload latest file)" with a tooltip, and added a
+  "How to refresh" note in the sidebar: download the latest workbook from the Drive folder,
+  click Refresh Data, select it.
+- **Verified end-to-end** by scripting a real file upload (`page.setInputFiles`) with the
+  actual `All Zones Consolidation - FIXED.xlsx` deliverable: 11,785 records loaded from the
+  correct "Database" sheet, Payment Rs. matched the baked build exactly (968,295,511), 9 zones,
+  9 categories, 0 console errors.
+
+**How refresh works today:** open the USD DB MIK Drive folder -> download the latest workbook
+-> click "Refresh Data" on the dashboard -> select the file. Recalculates instantly, client-side,
+no login, no page reload. Not real-time/automatic; that would need either (a) the Drive-sharing +
+API-key approach above (user must set up and accept the exposure trade-off), or (b) I re-run the
+build+push periodically (can be scheduled as a Routine on request).

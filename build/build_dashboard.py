@@ -162,10 +162,18 @@ chart_tag = ("<script>/* Chart.js 4.4.1 — inlined for a self-contained, offlin
              + chartjs.replace("</script>", "<\\/script>") + "\n</script>\n  ")
 sub(r'<script src="https://cdn\.jsdelivr\.net/npm/chart\.js@4\.4\.1/dist/chart\.umd\.min\.js"></script>\s*',
     lambda m: chart_tag, label="inline chartjs")
-sub(r'\s*<script src="https://cdn\.jsdelivr\.net/npm/papaparse@[^"]*"></script>', "",
-    label="drop papaparse cdn")
-sub(r'\s*<script src="https://cdn\.jsdelivr\.net/npm/xlsx@[^"]*"></script>', "",
-    label="drop xlsx cdn")
+with open("node_modules/papaparse/papaparse.min.js", encoding="utf-8") as f:
+    papacss = f.read()
+pp_tag = ("<script>/* PapaParse 5.4.1 — inlined so 'Refresh Data' works fully offline */\n"
+          + papacss.replace("</script>", "<\\/script>") + "\n</script>")
+sub(r'<script src="https://cdn\.jsdelivr\.net/npm/papaparse@[^"]*"></script>',
+    lambda m: pp_tag, label="inline papaparse")
+with open("node_modules/xlsx/dist/xlsx.full.min.js", encoding="utf-8") as f:
+    xlsxjs = f.read()
+xlsx_tag = ("<script>/* SheetJS (xlsx) 0.18.5 — inlined so 'Refresh Data' works fully offline */\n"
+            + xlsxjs.replace("</script>", "<\\/script>") + "\n</script>")
+sub(r'<script src="https://cdn\.jsdelivr\.net/npm/xlsx@[^"]*"></script>',
+    lambda m: xlsx_tag, label="inline xlsx")
 # Inline compiled Tailwind (only used classes) if present, and drop the Tailwind CDN,
 # so the page is fully self-contained (no external requests at all).
 if os.path.exists("build/tailwind.gen.css"):
@@ -309,10 +317,69 @@ lit('</main>', TAB56 + '        </main>', label="tab5/6 sections")
 sub(r"balanceQty:'Balance Qty to be lifted'",
     "balanceQty:'Balance Qty to be lifted',\n  auctValueTotal:'Total Auction Value', reservePriceTotal:'Total Reserve Price'",
     label="COL keys")
+# Fix two header-name mismatches vs. the real "Database" sheet (only matters for the
+# manual re-upload path -- the baked JSON boot path maps by array index, not header text).
+# The old embedded-CSV header names ('Auction To Bidder' / 'Balance Qty to be lifted') don't
+# exist in the source workbook, which uses 'Winner Bidder Name' / 'Balance Qty'.
+sub(r"bidder:'Auction To Bidder',", "bidder:'Winner Bidder Name',", label="fix bidder header")
+sub(r"balanceQty:'Balance Qty to be lifted'", "balanceQty:'Balance Qty'", label="fix balanceQty header")
+# pickBestSheet used to grab the first sheet whose NAME contains "recon" before checking
+# headers -- the workbook now has a "Reconciliation Summary" tab (2-col totals, not data)
+# which matched that regex and won over the real "Database" sheet. Check the header
+# signature first; only fall back to the name-regex if no sheet has matching headers.
+sub(r"const reconMatch = names\.find\(n => /recon/i\.test\(n\)\);\s*\n\s*if \(reconMatch\) return reconMatch;\s*\n\s*// 2\) header signature match\s*\n\s*const sig = \['Zone','Asset Name \(Matched\)'\];",
+    "// 1) header signature match (preferred -- a sheet literally named like \"...recon...\"\n"
+    "  // may just be a totals/summary tab, not the data table)\n"
+    "  const sig = ['Zone','Asset Name (Matched)'];",
+    label="pickBestSheet: signature before name-regex")
+_cleanrow_repl = (
+    "[COL.zone, COL.region, COL.itemCat, COL.assetCat, COL.assetName, COL.status, COL.bidder, COL.ddNo]\n"
+    " .forEach(c => { out[c] = (out[c]===null||out[c]===undefined) ? '' : String(out[c]).trim(); });\n"
+    " // Match the same zone/category normalization the build pipeline applies, so a manual\n"
+    " // \"Refresh Data\" upload of the raw Database sheet looks identical in quality.\n"
+    " if(out[COL.zone].toUpperCase()==='SUKKUR') out[COL.zone]='Sukkur';\n"
+    " const _cm={'FURNITURE, FIXTURE AND OFFICE':'Furniture, Fixture & Office','MOTOR VEHICLES AND BICYCLES':'Motor Vehicles & Bicycles',\n"
+    "  'SIGN BOARDS':'Sign Boards','COMPUTER AND OFFICE MACHINE/EQUIPMENT':'Computer & Office Equipment','PLANT AND EQUIPMENT':'Plant & Equipment',\n"
+    "  'ERP - COMPUTER & OFFICE MACHINES':'ERP – Computer & Office Machines','ERP - COMPUTER AND IT EQUIPMENT':'ERP – Computer & Office Machines',\n"
+    "  'ERP COMPUTER AND IT EQUIPMENT':'ERP – Computer & Office Machines','ERP':'ERP – Computer & Office Machines','OWN BRAND':'Own Brand',\n"
+    "  'RICE & PULSES':'Rice & Pulses','BRANDED GOODS (BG) NON FOOD':'Branded Goods (Non-Food)'};\n"
+    " const _ck=out[COL.assetCat].replace(/\\s+/g,' ').trim().toUpperCase();\n"
+    " if(_cm[_ck]) out[COL.assetCat]=_cm[_ck];\n"
+    " const _s=out[COL.status].replace(/\\s+/g,' ').trim().toUpperCase();\n"
+    " if(_s==='AUCTIONED') out[COL.status]='Auctioned'; else if(_s==='NOT AUCTIONED') out[COL.status]='Not Auctioned';\n"
+    " else if(_s==='PENDING') out[COL.status]='Pending'; else if(_s==='CONSIGNMENT') out[COL.status]='Consignment';\n"
+    " return out;")
+sub(r"\[COL\.zone, COL\.region, COL\.itemCat, COL\.assetCat, COL\.assetName, COL\.status, COL\.bidder, COL\.ddNo\]\s*\n\s*\.forEach\(c => \{ out\[c\] = \(out\[c\]===null\|\|out\[c\]===undefined\) \? '' : String\(out\[c\]\)\.trim\(\); \}\);\s*\n\s*return out;",
+    lambda m: _cleanrow_repl, label="cleanRow normalization")
+
+sub(r"if \(sig\.every\(s => hdrs\.includes\(s\)\)\) return n;\s*\n\s*\}\s*\n\s*// 3\) first non-empty sheet",
+    "if (sig.every(s => hdrs.includes(s))) return n;\n"
+    "  }\n"
+    "  // 2) fall back: sheet name containing \"recon\"\n"
+    "  const reconMatch = names.find(n => /recon/i.test(n));\n"
+    "  if (reconMatch) return reconMatch;\n"
+    "  // 3) first non-empty sheet",
+    label="pickBestSheet: name-regex fallback")
+# The manual-upload path (cleanRow) must also normalize the two fields added for the
+# new tabs, or a re-uploaded workbook would leave them as raw strings.
+sub(r"COL\.liftedQty, COL\.liftedKg, // 23-24",
+    "COL.liftedQty, COL.liftedKg, // 23-24\n COL.reservePriceTotal, COL.auctValueTotal, // reserve/auction value totals",
+    label="NUMERIC_COLS extend")
 
 # 7) header status/label wording
 sub(r"Awaiting data", "Loading…", label="status text")
-sub(r"Upload Excel / CSV", "Replace data (optional)", label="upload label")
+sub(r'title="Upload \.xlsx, \.xls, or \.csv"', label="upload title",
+    repl='title="Download the latest workbook from the USD DB MIK Drive folder, then click here to refresh this dashboard instantly with it."')
+sub(r"Upload Excel / CSV", "Refresh Data (upload latest file)", label="upload label")
+
+HOWTO = ('\n <div class="mt-4 pt-4 text-[11px] text-gray-400 leading-relaxed border-t border-gray-700">\n'
+         ' <div class="font-semibold text-gray-300 mb-1">How to refresh</div>\n'
+         ' <div>1. Open the &quot;USD DB MIK&quot; Drive folder &rarr; download the latest'
+         ' &quot;All Zones Consolidation.xlsx&quot;.<br>2. Click &quot;Refresh Data&quot; above &rarr;'
+         ' select the downloaded file.<br>Everything recalculates instantly &mdash; no page reload, no login.</div>\n'
+         ' </div>')
+sub(r'(<div id="scopeInfo">Upload a CSV to begin\. Slicers cascade and apply to every tab\.</div>\s*\n\s*</div>)',
+    lambda m: m.group(1) + HOWTO, label="how-to-refresh note")
 
 # 8) render calls: add tab0 + tab4
 sub(r"renderTab3\(data\);",
