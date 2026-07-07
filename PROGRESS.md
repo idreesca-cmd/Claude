@@ -227,3 +227,27 @@ programmatically, so step 1-2 is a one-time manual click.)
 
 A copy of the dashboard + the fixed workbook is also uploaded into the Drive folder as the
 source of record (see status log for the file links).
+
+## 7. Drive upload — BLOCKED by tool limit (use repo instead)
+
+Uploading `deliverables/*` into the Drive folder via the MCP failed: `create_file` only accepts
+inline base64, and the payloads are too large to pass as a tool argument
+(xlsx ≈ 1.62 M chars, html ≈ 2.53 M chars base64). No path/stream/resumable Drive upload tool is
+exposed. **Both deliverables are safely committed in this repo** (`deliverables/`), and the
+dashboard is served via GitHub Pages — so the Drive copy is optional. To place copies in Drive
+manually: download `deliverables/All Zones Consolidation - FIXED.xlsx` and
+`deliverables/USC_Dashboard_v2.html` from the repo and drag them into the "USD DB MIK" folder.
+(If a future session has a path-capable Drive upload tool, target
+`parentId=1PFSMyIYp3ZoMEDs7aL-CsSYrreyKW0zn`, `disableConversionToGoogleType=true`.)
+
+## 8. STATUS: what's DONE vs REMAINING (end of session 3)
+
+DONE: extraction · #REF! fix (verified) · new Category Milestone Overview tab · full 11,782-row
+data baked into all tabs · Payment & Lifting un-marked with real KPIs/charts · Project Updates
+panel · self-contained (inlined Chart.js) · browser-verified render · GitHub Pages files staged.
+
+REMAINING (next session): (a) **click-enable GitHub Pages** (Settings→Pages→branch=this, /docs) to
+go live at https://idreesca-cmd.github.io/Claude/ ; (b) optional Drive copies (manual, see §7);
+(c) **user sign-off on the lime/charcoal BT palette** vs the old green; (d) optional polish —
+vendor Tailwind for full offline, and right-edge scroll of the milestone matrix is Tailwind-gated
+(fine on Pages). No open bugs.
