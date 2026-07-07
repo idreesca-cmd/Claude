@@ -120,8 +120,12 @@ for row in it:
 # grand totals (indices into ORDER)
 idx = {k: i for i, k in enumerate(ORDER)}
 def gsum(k): return sum(r[idx[k]] for r in rows_out)
+SOURCE_PATH_LABEL = (r"G:\Shared drives\Clients (except pvt ltd co)\Advisory\Clients - Idrees"
+                      r"\Utility Stores Corporation - FAR Auction\USC Dashboard\USD DB MIK")
+_now = datetime.datetime.now(datetime.timezone.utc)
 meta = {
-    "refreshDate": datetime.date.today().isoformat(),
+    "refreshDate": _now.strftime("%Y-%m-%d %H:%M UTC"),
+    "sourcePath": SOURCE_PATH_LABEL,
     "rowCount": len(rows_out),
     "zones": sorted({r[0] for r in rows_out}),
     "categoryOrder": CAT_ORDER,
@@ -217,7 +221,7 @@ TAB0_CSS = """
  .pa-legend{font-size:9.5px;color:#9CA3AF;margin-top:3px;letter-spacing:.03em;}
  .dq-flag{color:var(--bt-amber);font-weight:700;cursor:help;}
 """
-sub(r"</style>", TAB0_CSS + "</style>", label="tab0 css")
+sub(r"</style>", TAB0_CSS + " .status-pill{white-space:nowrap} #sourcePath{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}</style>", label="tab0 css")
 
 # 3) nav — add tab0, drop pending pill, tab0 active
 sub(r'<button class="tab-btn active" data-tab="tab1">Overall Project Status</button>',
@@ -349,6 +353,10 @@ _cleanrow_repl = (
     " if(_s==='AUCTIONED') out[COL.status]='Auctioned'; else if(_s==='NOT AUCTIONED') out[COL.status]='Not Auctioned';\n"
     " else if(_s==='PENDING') out[COL.status]='Pending'; else if(_s==='CONSIGNMENT') out[COL.status]='Consignment';\n"
     " return out;")
+sub(r"setStatus\(`\$\{RAW\.length\.toLocaleString\(\)\} records loaded from \$\{filename\}\$\{sheetSuffix\}`, true\);",
+    lambda m: ("setStatus(`${RAW.length.toLocaleString()} records loaded from ${filename}${sheetSuffix}"
+               " · last synced ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`, true);"),
+    label="upload status timestamp")
 sub(r"\[COL\.zone, COL\.region, COL\.itemCat, COL\.assetCat, COL\.assetName, COL\.status, COL\.bidder, COL\.ddNo\]\s*\n\s*\.forEach\(c => \{ out\[c\] = \(out\[c\]===null\|\|out\[c\]===undefined\) \? '' : String\(out\[c\]\)\.trim\(\); \}\);\s*\n\s*return out;",
     lambda m: _cleanrow_repl, label="cleanRow normalization")
 
@@ -371,6 +379,10 @@ sub(r"Awaiting data", "Loading…", label="status text")
 sub(r'title="Upload \.xlsx, \.xls, or \.csv"', label="upload title",
     repl='title="Download the latest workbook from the USD DB MIK Drive folder, then click here to refresh this dashboard instantly with it."')
 sub(r"Upload Excel / CSV", "Refresh Data (upload latest file)", label="upload label")
+
+sub(r'(<div class="text-\[11px\] text-gray-500 leading-tight">Third-Party Validation Dashboard &middot; Baker Tilly</div>)',
+    lambda m: m.group(1) + '\n <div id="sourcePath" class="text-[10px] text-gray-400 leading-tight mt-0.5"></div>',
+    label="source path element")
 
 HOWTO = ('\n <div class="mt-4 pt-4 text-[11px] text-gray-400 leading-relaxed border-t border-gray-700">\n'
          ' <div class="font-semibold text-gray-300 mb-1">How to refresh</div>\n'
@@ -663,7 +675,9 @@ BOOT = r"""(function(){
     o[COL.itemCat]=o[COL.itemCat]||''; return o; });
   hydrateSlicers(); renderAll(); renderUpdates();
   const d = meta.meta.refreshDate || '';
-  setStatus(`Live · ${meta.meta.rowCount.toLocaleString()} records · refreshed ${d}`, true);
+  const sp = document.getElementById('sourcePath');
+  if(sp) sp.textContent = 'Source: ' + (meta.meta.sourcePath || '');
+  setStatus(`Live · ${meta.meta.rowCount.toLocaleString()} records · last synced ${d}`, true);
 })();"""
 sub(r"bootEmpty\(\);", BOOT, label="bootstrap")
 

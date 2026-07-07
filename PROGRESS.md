@@ -355,3 +355,32 @@ client-side "Refresh Data" button**:
 no login, no page reload. Not real-time/automatic; that would need either (a) the Drive-sharing +
 API-key approach above (user must set up and accept the exposure trade-off), or (b) I re-run the
 build+push periodically (can be scheduled as a Routine on request).
+
+## 14. Source path + timestamp in header, and automated refresh (session 8)
+
+- Added a **source path line** under the header subtitle showing the Drive shared-drive path
+  (`G:\Shared drives\Clients (except pvt ltd co)\Advisory\Clients - Idrees\Utility Stores
+  Corporation - FAR Auction\USC Dashboard\USD DB MIK`), so viewers know exactly where the data
+  comes from. Static label, sourced from `meta.sourcePath` in the baked JSON.
+- Status pill now shows **date AND time** of last sync (`Live · 11,782 records · last synced
+  2026-07-07 13:19 UTC`), not just a date. Applies to both the initial baked-data boot and the
+  manual "Refresh Data" upload path (each shows its own real sync timestamp).
+- Fixed a raw-string bug I introduced (`\\` continuation artifact) that briefly doubled a
+  backslash in the source path; caught before shipping via `repr()` check.
+
+### Automated refresh (Routine)
+Set up a durable **Routine** (`trig_01PKnUMFPyRfvfKTmvnjsSp2`, name "USC Dashboard Auto-Refresh"),
+cron `15 3 * * *` (daily 03:15 UTC), `create_new_session_on_fire=true`, notifications off. Each
+firing spawns a fresh session that: downloads the latest `All Zones Consolidation.xlsx` (Drive
+file id `1s_Nf1JvWNJg16J8iY-z2wWdeyeyzN5Um`) → reruns `build/build_dashboard.py` (twice, so
+Tailwind sees new classes) → validates (`node --check` on the extracted script + confirms zero
+external CDN refs) → copies to `docs/index.html` → commits + pushes to this branch **only if
+something actually changed**, else does nothing. This is the automatic "dashboard + its URL
+auto-update" mechanism: the public GitHub Pages link reflects the Drive workbook within ~24h of
+any change, with no login, no API key, no exposed source file. The "Refresh Data" button (§13)
+remains for instant on-demand refresh in between automated runs.
+
+**To change cadence or stop it:** ask me to update/delete trigger `trig_01PKnUMFPyRfvfKTmvnjsSp2`.
+
+## Automated refresh log
+(Entries appended here by the automated Routine after each successful publish.)
