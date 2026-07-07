@@ -251,3 +251,23 @@ go live at https://idreesca-cmd.github.io/Claude/ ; (b) optional Drive copies (m
 (c) **user sign-off on the lime/charcoal BT palette** vs the old green; (d) optional polish —
 vendor Tailwind for full offline, and right-edge scroll of the milestone matrix is Tailwind-gated
 (fine on Pages). No open bugs.
+
+## 9. FULLY SELF-CONTAINED (session 3 continued)
+
+Compiled Tailwind to only-used-classes (`build/tailwind.gen.css`, 8.5 KB via `tailwind.config.js`)
+and **inlined it**, removing the last CDN. The dashboard now makes **zero external requests** —
+works offline, behind firewalls, opened from `file://`, or on Pages. Re-verified in headless
+Chromium: **0 console errors**, full styled layout correct (all 9 category columns visible,
+rings + bars + anomaly flags). Screenshot refreshed in `docs/screenshots/`.
+
+Full rebuild sequence (for a clean clone):
+```
+npm i                          # restores chart.js + tailwindcss (dev)
+python3 build/build_dashboard.py "<All Zones Consolidation.xlsx>" \
+        base/index_base_shell.html source-data/project_updates.json \
+        deliverables/USC_Dashboard_v2.html
+npx tailwindcss -i build/tw-input.css -o build/tailwind.gen.css --minify   # only if classes changed
+python3 build/build_dashboard.py ...same...          # re-run so new CSS inlines
+cp deliverables/USC_Dashboard_v2.html docs/index.html
+```
+Remaining: click-enable GitHub Pages (§6) · optional manual Drive copy (§7) · palette sign-off.

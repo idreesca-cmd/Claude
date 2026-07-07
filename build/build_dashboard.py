@@ -14,7 +14,7 @@ Usage:
     python3 build/build_dashboard.py <consolidation.xlsx> <base_shell.html> \
             <project_updates.json> <out.html>
 """
-import sys, json, re, datetime
+import sys, json, re, datetime, os
 import openpyxl
 
 SRC_XLSX, BASE_HTML, PU_JSON, OUT_HTML = sys.argv[1:5]
@@ -149,6 +149,16 @@ sub(r'\s*<script src="https://cdn\.jsdelivr\.net/npm/papaparse@[^"]*"></script>'
     label="drop papaparse cdn")
 sub(r'\s*<script src="https://cdn\.jsdelivr\.net/npm/xlsx@[^"]*"></script>', "",
     label="drop xlsx cdn")
+# Inline compiled Tailwind (only used classes) if present, and drop the Tailwind CDN,
+# so the page is fully self-contained (no external requests at all).
+if os.path.exists("build/tailwind.gen.css"):
+    with open("build/tailwind.gen.css", encoding="utf-8") as f:
+        twcss = f.read()
+    tw_tag = "<style>/* Tailwind — compiled, only the classes this page uses */\n" + twcss + "\n</style>"
+    sub(r'<script src="https://cdn\.tailwindcss\.com"></script>', lambda m: tw_tag,
+        label="inline tailwind")
+else:
+    print("[build] WARN: build/tailwind.gen.css missing — keeping Tailwind CDN")
 
 # 1) palette + fonts (BT Brand Colors) — add brand vars, keep --bt-* scheme
 sub(r"--bt-green:#00A376;",
