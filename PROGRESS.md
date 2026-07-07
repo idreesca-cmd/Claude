@@ -194,3 +194,19 @@ Own Brand payment 106% · Rice auction 164% · several categories genuine 0 paym
   app script = OK. **NOT YET DONE:** (a) browser render verification (Playwright), (b) upload the
   fixed xlsx + v2 HTML to the Drive folder, (c) enable GitHub Pages, (d) render a Project Updates/News
   panel (data is embedded as `DASH_UPDATES` but no panel drawn yet), (e) user sign-off on palette.
+
+- **2026-07-07 (session 3)** — VERIFIED IN BROWSER + made self-contained.
+  Rendered `USC_Dashboard_v2.html` in headless Chromium: data loads (11,782 records, status
+  "Live · refreshed 2026-07-07"); **Category Milestone Overview** draws 36 donut rings (9 cats ×
+  4 stages) with plan/act bars and amber ▲ flags on >100% anomalies; **Payment & Lifting** shows
+  real KPIs (Payment Rs 968,295,511 · Lifted 930,063 · Balance 845,605) + 2 Chart.js charts +
+  detail table; **Project Updates panel** on Overall tab renders 2 news items + 57 zone-status rows.
+  `node --check` clean; screenshots in `docs/screenshots/`.
+  Made the file self-contained: **inlined Chart.js** (vendored via npm) so it works offline/behind
+  firewalls, and **dropped the dead PapaParse/SheetJS CDNs**. Only the Tailwind CDN remains (loads
+  fine on GitHub Pages; sandbox can't reach it so verification layout is stacked — cosmetic only).
+  Rebuild: `npm i` (restores chart.js) then
+  `python3 build/build_dashboard.py <xlsx> base/index_base_shell.html source-data/project_updates.json deliverables/USC_Dashboard_v2.html`.
+  **STILL REMAINING:** (a) upload `deliverables/*` to the Drive folder; (b) enable GitHub Pages for
+  the shareable link; (c) user sign-off on the lime/charcoal palette; (d) optional: vendor Tailwind
+  for full offline. Tasks 1-5,7 done; task 6 (publish) is the last one.

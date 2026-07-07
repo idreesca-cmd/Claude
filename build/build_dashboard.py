@@ -136,6 +136,20 @@ def sub(pattern, repl, flags=0, count=1, label=""):
     assert n == count, f"anchor NOT found ({n}/{count}): {label or pattern[:60]}"
     html = new
 
+# 0) Make the page self-contained: inline Chart.js (vendored from npm) so the
+#    dashboard works offline / behind firewalls, and drop the now-dead upload CDNs
+#    (data is baked in; the optional upload handler already guards missing libs).
+with open("node_modules/chart.js/dist/chart.umd.js", encoding="utf-8") as f:
+    chartjs = f.read()
+chart_tag = ("<script>/* Chart.js 4.4.1 — inlined for a self-contained, offline-safe file */\n"
+             + chartjs.replace("</script>", "<\\/script>") + "\n</script>\n  ")
+sub(r'<script src="https://cdn\.jsdelivr\.net/npm/chart\.js@4\.4\.1/dist/chart\.umd\.min\.js"></script>\s*',
+    lambda m: chart_tag, label="inline chartjs")
+sub(r'\s*<script src="https://cdn\.jsdelivr\.net/npm/papaparse@[^"]*"></script>', "",
+    label="drop papaparse cdn")
+sub(r'\s*<script src="https://cdn\.jsdelivr\.net/npm/xlsx@[^"]*"></script>', "",
+    label="drop xlsx cdn")
+
 # 1) palette + fonts (BT Brand Colors) — add brand vars, keep --bt-* scheme
 sub(r"--bt-green:#00A376;",
     "--bt-green:#00A376; --bt-lime:#D1EC51; --bt-lime-deep:#8Fb400;"
@@ -325,8 +339,36 @@ function renderTab4(data){
       rows.slice(0,500).map(r=>`<tr><td>${escapeHtml(r.zone)}</td><td>${escapeHtml(r.cat)}</td><td style="text-align:right">${fmtNum(r.val)}</td><td style="text-align:right" class="pos">${fmtNum(r.pay)}</td><td style="text-align:right">${fmtNum(r.lift)}</td><td style="text-align:right" class="${r.bal>0?'neg':''}">${fmtNum(r.bal)}</td></tr>`).join('')+`</tbody></table>`;
 }
 
+/* ==================== PROJECT UPDATES & NEWS ==================== */
+function renderUpdates(){
+  const recs = (window.DASH_UPDATES && DASH_UPDATES.records) || [];
+  const news = recs.filter(r => (r.source||'')==='News' && (r.note||r.date));
+  const nl = document.getElementById('newsList');
+  if(nl) nl.innerHTML = news.length ? news.map(r=>
+    `<div style="padding:9px 0;border-bottom:1px solid #F3F4F6"><div style="font-size:11px;color:var(--bt-muted);font-weight:600">${escapeHtml(r.date||'')}</div><div style="font-size:13px;color:#374151;margin-top:2px">${escapeHtml(r.note||'')}</div></div>`).join('')
+    : '<div class="empty-state">No dated news items in the source.</div>';
+  const st = recs.filter(r => (r.source||'')==='Project Status' && (r.zone||r.lead||r.status));
+  const sl = document.getElementById('statusList');
+  if(sl) sl.innerHTML = st.length ?
+    `<table class="data-table"><thead><tr><th>Zone</th><th>Region</th><th>Lead</th><th>Status / Note</th></tr></thead><tbody>`+
+    st.map(r=>`<tr><td>${escapeHtml(r.zone||'')}</td><td>${escapeHtml(r.region||'')}</td><td>${escapeHtml(r.lead||'')}</td><td>${escapeHtml(r.status||r.note||'—')}</td></tr>`).join('')+
+    `</tbody></table>` : '<div class="empty-state">No status records.</div>';
+}
+
 /* ---------- Initial empty state ---------- */"""
 sub(r"/\* ---------- Initial empty state ---------- \*/", NEW_JS, label="inject tab0/tab4 js")
+
+# 10b) Project Updates & News panel on the Overall tab (tab1)
+PANEL = ('\n          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">\n'
+         '            <div class="chart-card"><div class="chart-title">Latest News</div>'
+         '<div class="chart-sub">Dated updates from the Project Updates workbook</div>'
+         '<div id="newsList"></div></div>\n'
+         '            <div class="chart-card"><div class="chart-title">Zone Leads &amp; Field Status</div>'
+         '<div class="chart-sub">Assigned leads and status by zone / region</div>'
+         '<div id="statusList" class="data-table-wrap" style="max-height:360px;"></div></div>\n'
+         '          </div>\n        ')
+sub(r'(<canvas id="chartByCat"></canvas></div>\s*</div>)\s*</section>',
+    lambda m: m.group(1) + PANEL + '</section>', flags=re.DOTALL, label="updates panel")
 
 # 11) bootstrap from embedded JSON (replace the bootEmpty() call)
 BOOT = r"""(function(){
@@ -336,7 +378,7 @@ BOOT = r"""(function(){
   RAW = meta.rows.map(a => { const o={}; cols.forEach((c,i)=>{ o[COL[c]] = a[i]; });
     // ensure keys used by render code exist
     o[COL.itemCat]=o[COL.itemCat]||''; return o; });
-  hydrateSlicers(); renderAll();
+  hydrateSlicers(); renderAll(); renderUpdates();
   const d = meta.meta.refreshDate || '';
   setStatus(`Live · ${meta.meta.rowCount.toLocaleString()} records · refreshed ${d}`, true);
 })();"""
@@ -346,9 +388,9 @@ sub(r"bootEmpty\(\);", BOOT, label="bootstrap")
 DATA_TAG = ('<script id="dashboardData" type="application/json">'
             + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
             + "</script>\n<script>")
+_data_repl = DATA_TAG + "\n/* ============================================================\n   USC Asset Disposal"
 sub(r"<script>\s*\n/\* =+\s*\n\s*USC Asset Disposal",
-    DATA_TAG + "\n/* ============================================================\n   USC Asset Disposal",
-    flags=re.DOTALL, label="inject data tag")
+    lambda m: _data_repl, flags=re.DOTALL, label="inject data tag")
 
 with open(OUT_HTML, "w", encoding="utf-8") as f:
     f.write(html)
