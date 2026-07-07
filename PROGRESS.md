@@ -68,7 +68,18 @@ Extracted artifacts are committed under **`/source-data/`** (see that folder):
 
 ---
 
-## 4. #REF! FIX SPEC (Reconciliation Summary tab) — READY TO APPLY
+## 4. #REF! FIX SPEC (Reconciliation Summary tab) — DECLINED, IGNORE GOING FORWARD
+
+**2026-07-07: user decision — ignore the `#REF!` errors going forward.** Do not re-flag, re-fix,
+or ask about this again in future sessions. Kept below for historical reference only.
+
+Note this was **never a dashboard-accuracy issue**: the dashboard computes every total directly
+from the `Database` sheet in `build/build_dashboard.py` (Python), not by reading the
+`Reconciliation Summary` tab's broken `SUM` formulas. The `#REF!` cells only affected that one
+standalone Excel tab when opened manually in Excel — the published dashboard's numbers have
+always been correct regardless of this issue.
+
+<details><summary>Historical fix spec (not applied, not required)</summary>
 
 All **15** cells `B4:B18` are `=SUM(#REF!)`. Root cause: they summed a helper sheet
 `_PivotSource` (+ `Pivot-*` sheets) that were deleted, so Excel voided the ranges.
@@ -99,6 +110,8 @@ Apply with openpyxl on `all_zones_consolidation.xlsx`, save as a NEW file, uploa
 
 **Payment & Lifting tab CAN be un-marked "Pending"** — real data present (Payment ≈ 968.3M,
 Lifted ≈ 930,063).
+
+</details>
 
 ---
 
@@ -404,10 +417,10 @@ Addressed three follow-up requests:
    `1NB7ZL1fAhCj5cCCadWTccKF56u5AOSKO`. Chose `copy_file` specifically to avoid the known
    base64-upload size ceiling (confirmed in an earlier session: ~1.2–2.5MB files fail to upload
    via `create_file`'s inline-base64 parameter) — a Drive-to-Drive copy has no such limit since
-   the bytes never pass through my context. **Caveat flagged to user:** this copy inherits
-   whatever the live file currently contains, which likely still has the `#REF!` bug (§4) unless
-   already fixed — recommended they paste in the corrected formulas or re-upload the fixed copy
-   under this same name. I could not independently re-verify the copy's formula contents (a full
+   the bytes never pass through my context. This copy inherits whatever the live file currently
+   contains, which likely still has the `#REF!` cells in the `Reconciliation Summary` tab — per
+   **2026-07-07 user decision, this is intentionally ignored going forward** (§4); it does not
+   affect the dashboard. I could not independently re-verify the copy's formula contents (a full
    re-download of a file this size risks the same truncation issue documented in §5/HTML outline).
    - Updated the dashboard's displayed source path to include the file name:
      `...\USD DB MIK\USC_Dashboard_Data_Source_File.xlsx`, with a hover tooltip showing the
