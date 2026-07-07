@@ -210,3 +210,20 @@ Own Brand payment 106% · Rice auction 164% · several categories genuine 0 paym
   **STILL REMAINING:** (a) upload `deliverables/*` to the Drive folder; (b) enable GitHub Pages for
   the shareable link; (c) user sign-off on the lime/charcoal palette; (d) optional: vendor Tailwind
   for full offline. Tasks 1-5,7 done; task 6 (publish) is the last one.
+
+## 6. HOSTING — GitHub Pages (ready to enable)
+
+The dashboard is committed at **`docs/index.html`** (+ `docs/.nojekyll`) on branch
+`claude/dashboard-files-review-t31098`. To publish the no-login shareable link:
+
+1. GitHub → repo **idreesca-cmd/Claude** → **Settings → Pages**.
+2. **Source:** "Deploy from a branch". **Branch:** `claude/dashboard-files-review-t31098`,
+   **Folder:** `/docs`. Save.
+3. Wait ~1 min. Live URL: **https://idreesca-cmd.github.io/Claude/**  (share this with the client).
+
+To refresh later: re-run `build/build_dashboard.py`, `cp deliverables/USC_Dashboard_v2.html
+docs/index.html`, commit + push — the same URL updates. (There is no MCP tool to enable Pages
+programmatically, so step 1-2 is a one-time manual click.)
+
+A copy of the dashboard + the fixed workbook is also uploaded into the Drive folder as the
+source of record (see status log for the file links).
