@@ -271,3 +271,17 @@ python3 build/build_dashboard.py ...same...          # re-run so new CSS inlines
 cp deliverables/USC_Dashboard_v2.html docs/index.html
 ```
 Remaining: click-enable GitHub Pages (§6) · optional manual Drive copy (§7) · palette sign-off.
+
+## 10. Polish pass (session 4)
+
+QA'd all 5 tabs in-browser (screenshots in docs/screenshots) and fixed:
+- **Tab 3 "Pricing & Bidder — Still Awaiting" card was stale/wrong** — the source now has this data.
+  Replaced with real coverage KPIs: Total Reserve Price (Rs 5,030,464), Total Auction Value
+  (Rs 17,124,785,955), **Records with Winning Bidder = 10,226 (86.8%)**, Records with Auction Date
+  = 10,219 (86.7%). Baked two more Database cols into the data (U Winner Bidder, T Auction Date).
+- **Brand-aligned the Chart.js palette** to lime (#8FB400) + charcoal so charts match the tab0/tab4
+  rings (was old teal #00A376).
+- **Fixed stale caption** "five asset categories" → "asset categories" (there are 9).
+- **Added a Data Quality & Methodology notes card** to tab0 (stage formulas + explanation of the
+  >100% ▲ anomalies) — professional context for the TPV client.
+Re-verified: 0 console errors, JS valid, still zero external requests. docs/index.html refreshed.

@@ -82,7 +82,14 @@ def C(row, letter): return row[ci(letter) - 1]
 # fixed emit order -> mirrored in the browser bootstrap
 ORDER = ["zone","region","itemCat","assetCat","assetName","aQty","bQty","cQty",
          "status","auctQtyUsable","auctQtyScrap","auctQtyTotal","reservePriceTotal",
-         "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty"]
+         "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty","bidder","auctionDate"]
+
+def _dstr(v):
+    if v is None or v == "": return ""
+    if hasattr(v, "date"):
+        try: return v.date().isoformat()
+        except Exception: return str(v).strip()
+    return str(v).strip()
 
 rows_out = []
 it = db.iter_rows(min_row=2, values_only=True)
@@ -104,6 +111,7 @@ for row in it:
         num(C(row,"J")), num(C(row,"K")), num(C(row,"L")),
         num(C(row,"R")), num(C(row,"Y")), num(C(row,"AA")),
         num(C(row,"AD")), num(C(row,"AE")), num(C(row,"AF")),
+        _dstr(C(row,"U")), _dstr(C(row,"T")),
     ]
     rows_out.append(rec)
 
@@ -211,6 +219,15 @@ TAB0_SECTION = """
             <div class="chart-sub">Progress by asset category across the four disposal stages. Rings show % achieved; the paired bars compare <b>planned</b> (stage target) vs <b>actual</b> (achieved). Figures respect the global slicers. <span class="dq-flag">&#9650;</span> marks values &gt;100% (source data-quality anomalies, shown unclamped).</div>
             <div id="milestoneMatrix" style="overflow-x:auto;"></div>
           </div>
+          <div class="chart-card mt-4">
+            <div class="chart-title">Data Quality &amp; Methodology Notes</div>
+            <div class="chart-sub">How each stage is measured, and known source anomalies (shown unclamped for the client to reconcile).</div>
+            <ul style="font-size:12.5px;color:#374151;line-height:1.7;margin:4px 0 0 18px;list-style:disc;">
+              <li><b>Physical Verification</b> = Physical Count (C) &divide; Odoo Qty (A) &middot; <b>Auction</b> = Auctioned Qty &divide; Physical Count &middot; <b>Lifting</b> = Lifted Qty &divide; Auctioned Qty &middot; <b>Payment</b> = Payment Received &divide; Total Auction Value.</li>
+              <li>Cells marked <span class="dq-flag">&#9650;</span> exceed 100% &mdash; genuine source inconsistencies (e.g. lifted qty &gt; auctioned qty, payment &gt; booked value, auctioned qty &gt; counted qty). Figures are shown exactly as recorded and are <b>not clamped</b>; they flag records USC should reconcile at source.</li>
+              <li>Categories at 0% Payment/Lifting (Motor Vehicles, ERP, Branded Goods) have no monetised auction in the source yet &mdash; this is genuine status, not missing data.</li>
+            </ul>
+          </div>
         </section>
 
         <section id="tab1" class="tab-pane">"""
@@ -234,6 +251,17 @@ TAB4_SECTION = """<section id="tab4" class="tab-pane">
 sub(r'<section id="tab4" class="tab-pane">.*?</section>', TAB4_SECTION,
     flags=re.DOTALL, label="tab4 section")
 
+# 5b) tab3 — replace the stale "Pricing & Bidder — Still Awaiting" card with real coverage KPIs
+TAB3_PRICING = ('<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">\n'
+  '            <div class="kpi-card"><div class="kpi-label">Total Reserve Price (Rs.)</div><div id="kpi3Reserve" class="kpi-value">—</div><div class="kpi-sub">Floor value set for lots</div></div>\n'
+  '            <div class="kpi-card"><div class="kpi-label">Total Auction Value (Rs.)</div><div id="kpi3Value" class="kpi-value">—</div><div class="kpi-sub">Awarded / booked value</div></div>\n'
+  '            <div class="kpi-card"><div class="kpi-label">Records with Winning Bidder</div><div id="kpi3Bidder" class="kpi-value">—</div><div id="kpi3BidderSub" class="kpi-sub">Bidder name recorded</div></div>\n'
+  '            <div class="kpi-card"><div class="kpi-label">Records with Auction Date</div><div id="kpi3Date" class="kpi-value">—</div><div id="kpi3DateSub" class="kpi-sub">Auction date recorded</div></div>\n'
+  '          </div>\n'
+  '          <div class="chart-card mt-4" style="padding:14px 18px;"><div class="chart-sub" style="margin:0;">Pricing &amp; bidder fields are now partially populated in the source (see the corrected workbook). Zero or blank cells indicate lots not yet monetised or awarded; all figures are shown exactly as recorded.</div></div>\n        </section>')
+sub(r'<div class="awaiting-card" style="padding:24px;">.*?</section>',
+    lambda m: TAB3_PRICING, flags=re.DOTALL, label="tab3 pricing card")
+
 # 6) COL: add auctValueTotal + reservePriceTotal
 sub(r"balanceQty:'Balance Qty to be lifted'",
     "balanceQty:'Balance Qty to be lifted',\n  auctValueTotal:'Total Auction Value', reservePriceTotal:'Total Reserve Price'",
@@ -245,8 +273,19 @@ sub(r"Upload Excel / CSV", "Replace data (optional)", label="upload label")
 
 # 8) render calls: add tab0 + tab4
 sub(r"renderTab3\(data\);",
-    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);",
+    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);",
     label="renderAll calls")
+
+# 8b) Brand-align the Chart.js palette (lime accent, matching tab0/tab4)
+sub(r"green:'#00A376', greenDark:'#007F5C', greenTint:'#7DCBB3',",
+    "green:'#8FB400', greenDark:'#5E7A00', greenTint:'#D1EC51',", label="BT green->lime")
+sub(r"palette:\['#00A376','#2C3136','#D97706','#2563EB','#9333EA','#0891B2','#DC2626','#65A30D'\]",
+    "palette:['#8FB400','#2C303B','#D97706','#0891B2','#9333EA','#2563EB','#DC2626','#00A376']",
+    label="BT palette lime-first")
+
+# 8c) Fix stale caption ("five" asset categories -> nine are in scope)
+sub(r"Distribution across the five asset categories in scope",
+    "Distribution across the asset categories in scope", label="caption fix")
 
 # 9) cap big detail tables to 500 rows (perf with 11.7k rows)
 sub(r"\$\{rows\.map\(r => `\s*\n\s*<tr>\s*\n\s*<td>\$\{escapeHtml\(r\.zone\)\}</td>\s*\n\s*<td>\$\{escapeHtml\(r\.region\)\}</td>\s*\n\s*<td>\$\{escapeHtml\(r\.assetCat\)\}",
@@ -347,6 +386,19 @@ function renderTab4(data){
   wrap.innerHTML = rows.length===0 ? '<div class="empty-state">No payment or lifting activity under the current filters.</div>'
     : `<table class="data-table"><thead><tr><th>Zone</th><th>Asset Category</th><th style="text-align:right">Auction Value (Rs.)</th><th style="text-align:right">Payment (Rs.)</th><th style="text-align:right">Lifted Qty</th><th style="text-align:right">Balance Qty</th></tr></thead><tbody>`+
       rows.slice(0,500).map(r=>`<tr><td>${escapeHtml(r.zone)}</td><td>${escapeHtml(r.cat)}</td><td style="text-align:right">${fmtNum(r.val)}</td><td style="text-align:right" class="pos">${fmtNum(r.pay)}</td><td style="text-align:right">${fmtNum(r.lift)}</td><td style="text-align:right" class="${r.bal>0?'neg':''}">${fmtNum(r.bal)}</td></tr>`).join('')+`</tbody></table>`;
+}
+
+/* ============ TAB 3 — auction pricing & bidder coverage (was "awaiting") ============ */
+function renderAuctionPricing(data){
+  const rp = sum(data,r=>r[COL.reservePriceTotal]);
+  const av = sum(data,r=>r[COL.auctValueTotal]);
+  const bid = data.filter(r=>(r[COL.bidder]||'').toString().trim()).length;
+  const dat = data.filter(r=>(r[COL.auctionDate]||'').toString().trim()).length;
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  set('kpi3Reserve','Rs '+fmtNum(rp)); set('kpi3Value','Rs '+fmtNum(av));
+  set('kpi3Bidder',fmtNum(bid)); set('kpi3Date',fmtNum(dat));
+  const bs=document.getElementById('kpi3BidderSub'); if(bs) bs.textContent = data.length? (bid/data.length*100).toFixed(1)+'% of records' : '—';
+  const ds=document.getElementById('kpi3DateSub'); if(ds) ds.textContent = data.length? (dat/data.length*100).toFixed(1)+'% of records' : '—';
 }
 
 /* ==================== PROJECT UPDATES & NEWS ==================== */
