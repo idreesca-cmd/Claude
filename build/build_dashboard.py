@@ -203,14 +203,27 @@ sub(r"font-family:'Inter','Segoe UI',system-ui,sans-serif;color:var\(--bt-slate\
 # 2) new-tab CSS (inject before </style>)
 TAB0_CSS = """
  /* Category Milestone Overview */
- .ms-table{border-collapse:separate;border-spacing:0;min-width:920px;width:100%;}
- .ms-table th,.ms-table td{padding:12px 10px;border-bottom:1px solid var(--bt-border);vertical-align:top;}
- .ms-table thead th{position:sticky;top:0;background:var(--bt-charcoal);color:#fff;font-size:12px;font-weight:600;text-align:center;border-bottom:none;}
- .ms-table thead th:first-child{background:var(--bt-charcoal);text-align:left;border-top-left-radius:10px;}
- .ms-table thead th:last-child{border-top-right-radius:10px;}
+ .ms-table{border-collapse:separate;border-spacing:0;min-width:1680px;width:100%;}
+ .ms-table th,.ms-table td{padding:11px 9px;border-bottom:1px solid var(--bt-border);vertical-align:top;}
+ .ms-table thead th{background:var(--bt-charcoal);color:#fff;font-size:12px;font-weight:600;text-align:center;border-bottom:none;}
+ .ms-table thead th.ms-stage-h{text-align:left;border-top-left-radius:10px;vertical-align:bottom;}
+ .ms-table thead th.ms-total-h{border-top-right-radius:10px;background:#1b1f26;vertical-align:bottom;}
+ .ms-table thead th.ms-total-h small{display:block;font-weight:500;color:#9CA3AF;font-size:10px;margin-top:2px;}
+ .ms-main{background:#1b1f26 !important;border-left:3px solid var(--bt-lime-deep);font-size:12.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;}
+ .ms-sub{font-weight:600;font-size:11.5px;background:var(--bt-charcoal) !important;border-top:1px solid #3a4149;}
  .ms-stage{font-weight:700;color:var(--bt-slate);font-size:13px;white-space:nowrap;background:var(--bt-mint);}
  .ms-stage small{display:block;font-weight:500;color:var(--bt-muted);font-size:11px;margin-top:2px;}
- .ms-cell{text-align:center;min-width:120px;}
+ .ms-cell{text-align:center;min-width:132px;}
+ .ms-cell.ms-total{background:var(--bt-mint);border-left:2px solid var(--bt-lime-deep);}
+ /* horizontal comparison bars (Reconciliation + Auction rows) */
+ .hbars{display:flex;flex-direction:column;gap:7px;text-align:left;}
+ .hbar-top{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;line-height:1.2;gap:6px;}
+ .hbar-label{color:var(--bt-muted);font-weight:600;white-space:nowrap;}
+ .hbar-val{color:var(--bt-slate);font-weight:700;white-space:nowrap;}
+ .hbar-track{height:9px;background:#EDEFF2;border-radius:5px;overflow:hidden;margin-top:2px;}
+ .hbar-fill{height:100%;border-radius:5px;background:var(--bt-lime-deep);}
+ .hbar-fill.ref{background:var(--bt-charcoal);}
+ .hbar-fill.anom{background:var(--bt-amber);}
  .ring{width:64px;height:64px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;position:relative;}
  .ring::after{content:'';position:absolute;inset:8px;background:#fff;border-radius:50%;}
  .ring span{position:relative;z-index:1;font-size:13px;font-weight:700;color:var(--bt-slate);}
@@ -239,16 +252,17 @@ TAB0_SECTION = """
         <section id="tab0" class="tab-pane active">
           <div class="chart-card">
             <div class="chart-title">Category Milestone Overview</div>
-            <div class="chart-sub">Progress by asset category across the four disposal stages. Rings show % achieved; the paired bars compare <b>planned</b> (stage target) vs <b>actual</b> (achieved). Figures respect the global slicers. <span class="dq-flag">&#9650;</span> marks values &gt;100% (source data-quality anomalies, shown unclamped).</div>
+            <div class="chart-sub">Asset categories are grouped under main categories (Fixed Assets, Inventories, IT Equipment); the last column totals all categories. Figures respect the global slicers. <span class="dq-flag">&#9650;</span> marks values &gt;100% (source data-quality anomalies, shown unclamped).</div>
             <div id="milestoneMatrix" style="overflow-x:auto;"></div>
           </div>
           <div class="chart-card mt-4">
             <div class="chart-title">Data Quality &amp; Methodology Notes</div>
-            <div class="chart-sub">How each stage is measured, and known source anomalies (shown unclamped for the client to reconcile).</div>
+            <div class="chart-sub">How each row is measured, and known source anomalies (shown unclamped for the client to reconcile).</div>
             <ul style="font-size:12.5px;color:#374151;line-height:1.7;margin:4px 0 0 18px;list-style:disc;">
-              <li><b>Physical Verification</b> = Physical Count (C) &divide; Odoo Qty (A) &middot; <b>Auction</b> = Auctioned Qty &divide; Physical Count &middot; <b>Lifting</b> = Lifted Qty &divide; Auctioned Qty &middot; <b>Payment</b> = Payment Received &divide; Total Auction Value.</li>
-              <li>Cells marked <span class="dq-flag">&#9650;</span> exceed 100% &mdash; genuine source inconsistencies (e.g. lifted qty &gt; auctioned qty, payment &gt; booked value, auctioned qty &gt; counted qty). Figures are shown exactly as recorded and are <b>not clamped</b>; they flag records USC should reconcile at source.</li>
-              <li>Categories at 0% Payment/Lifting (Motor Vehicles, ERP, Branded Goods) have no monetised auction in the source yet &mdash; this is genuine status, not missing data.</li>
+              <li><b>Reconciliation</b> (horizontal bars) &mdash; A. Odoo qty (system of record, the reference), B. Physical Lists (% shown vs A. Odoo), C. Physical Count (% shown vs B. Lists).</li>
+              <li><b>Auction</b> &mdash; ring = Auctioned Qty &divide; Physical Count; the bars compare <b>Total Reserve Price</b> vs <b>Total Auction Value</b> (Rs), with auction value shown as a % of reserve. <b>Lifting</b> = Lifted Qty &divide; Auctioned Qty. <b>Payment</b> = Payment Received &divide; Total Auction Value.</li>
+              <li>Values marked <span class="dq-flag">&#9650;</span> exceed 100% &mdash; genuine source inconsistencies (e.g. count &gt; lists, lifted &gt; auctioned, payment/auction-value &gt; reserve). Figures are shown exactly as recorded and are <b>not clamped</b>; they flag records USC should reconcile at source.</li>
+              <li>Main-category grouping: <b>Fixed Assets</b> = Furniture &amp; Fixture, Motor Vehicles, Sign Boards, Plant &amp; Equipment; <b>Inventories</b> = Own Brand (Spices), Rice &amp; Pulses, Branded Goods; <b>IT Equipment</b> = ERP, General IT.</li>
             </ul>
           </div>
         </section>
@@ -422,15 +436,25 @@ sub(r"\$\{rows\.map\(r => `\s*\n\s*<tr>\s*\n\s*<td>\$\{escapeHtml\(r\.zone\)\}</
 # 10) inject renderTab0 / renderTab4 before the empty-state block
 NEW_JS = r"""
 /* ==================== TAB 0 — CATEGORY MILESTONE OVERVIEW ==================== */
-const MS_STAGES = [
-  { name:'Physical Verification', sub:'Odoo → Physical Count',
-    total:g=>sum(g,r=>r[COL.aQty]), ach:g=>sum(g,r=>r[COL.cQty]) },
-  { name:'Auction', sub:'Physical Count → Auctioned',
-    total:g=>sum(g,r=>r[COL.cQty]), ach:g=>sum(g,r=>r[COL.auctQtyTotal]) },
-  { name:'Lifting', sub:'Auctioned → Lifted',
-    total:g=>sum(g,r=>r[COL.auctQtyTotal]), ach:g=>sum(g,r=>r[COL.liftedQty]) },
-  { name:'Payment', sub:'Auction Value → Received (Rs.)',
-    total:g=>sum(g,r=>r[COL.auctValueTotal]), ach:g=>sum(g,r=>r[COL.payRs]) },
+/* Main categories -> sub-categories. `key` must match the normalized assetCat values.
+   NOTE: "Motor Vehicles & Bicycles" was not assigned by the client; placed under Fixed
+   Assets (vehicles are fixed assets) as a sensible default — trivially movable here. */
+const MS_GROUPS = [
+  { main:'Fixed Assets', subs:[
+      {key:'Furniture, Fixture & Office', label:'Furniture & Fixture'},
+      {key:'Motor Vehicles & Bicycles', label:'Motor Vehicles'},
+      {key:'Sign Boards', label:'Sign Boards'},
+      {key:'Plant & Equipment', label:'Plant & Equipment'},
+  ]},
+  { main:'Inventories', subs:[
+      {key:'Own Brand', label:'Own Brand (Spices)'},
+      {key:'Rice & Pulses', label:'Rice & Pulses'},
+      {key:'Branded Goods (Non-Food)', label:'Branded Goods'},
+  ]},
+  { main:'IT Equipment', subs:[
+      {key:'ERP – Computer & Office Machines', label:'ERP'},
+      {key:'Computer & Office Equipment', label:'General IT'},
+  ]},
 ];
 function ringStyle(pct){
   const deg = Math.max(0, Math.min(100, pct))*3.6;
@@ -444,27 +468,68 @@ function paBars(total, ach){
          `<div class="pa-bar act" style="height:${ha}px" title="Actual: ${fmtNum(ach)}"></div></div>`+
          `<div class="pa-legend">Plan │ Act</div>`;
 }
+function ringBlock(pct, ach, total){
+  const flag = (pct!==null && pct>100) ? ' <span class="dq-flag" title="Exceeds 100% — source data anomaly">▲</span>' : '';
+  const label = pct===null ? '—' : pct.toFixed(0)+'%';
+  return `<div class="ring" style="${ringStyle(pct||0)}"><span>${label}</span></div>`+
+         `<div class="ms-qty"><b>${fmtNum(ach)}</b> / ${fmtNum(total)}${flag}</div>`;
+}
+/* one horizontal bar: label + value(+%) above a proportional track */
+function hbar(label, qty, widthPct, pctText, kind){
+  const w = Math.max(2, Math.min(100, isFinite(widthPct)?widthPct:0));
+  return `<div class="hbar-row"><div class="hbar-top"><span class="hbar-label">${label}</span>`+
+         `<span class="hbar-val">${fmtNum(qty)}${pctText?' · '+pctText:''}</span></div>`+
+         `<div class="hbar-track"><div class="hbar-fill ${kind||''}" style="width:${w}%"></div></div></div>`;
+}
+function bigPct(p){ return fmtNum(p)+'%'; }
+/* Reconciliation cell: A Odoo (reference) -> B Lists (% vs A) -> C Count (% vs B) */
+function reconCell(rows){
+  const A=sum(rows,r=>r[COL.aQty]), B=sum(rows,r=>r[COL.bQty]), C=sum(rows,r=>r[COL.cQty]);
+  const bp = A>0 ? B/A*100 : null, cp = B>0 ? C/B*100 : null;
+  return '<div class="hbars">'+
+    hbar('A · Odoo', A, 100, 'base', 'ref')+
+    hbar('B · Lists', B, bp===null?0:bp, bp===null?'—':bp.toFixed(0)+'% vs A', bp!==null&&bp>100?'anom':'')+
+    hbar('C · Count', C, cp===null?0:cp, cp===null?'—':cp.toFixed(0)+'% vs B', cp!==null&&cp>100?'anom':'')+
+    '</div>';
+}
+/* Auction cell: donut (Count -> Auctioned) + horizontal Reserve vs Auction Value (Rs) */
+function auctionCell(rows){
+  const total=sum(rows,r=>r[COL.cQty]), ach=sum(rows,r=>r[COL.auctQtyTotal]);
+  const pct = total>0 ? ach/total*100 : null;
+  const rp=sum(rows,r=>r[COL.reservePriceTotal]), av=sum(rows,r=>r[COL.auctValueTotal]);
+  const mx=Math.max(rp,av,1);
+  const bars='<div class="hbars" style="margin-top:8px">'+
+    hbar('Reserve (Rs)', rp, rp/mx*100, '', 'ref')+
+    hbar('Auction (Rs)', av, av/mx*100, rp>0?bigPct(av/rp*100)+' of res.':'—', rp>0&&av>rp?'anom':'')+
+    '</div>';
+  return ringBlock(pct, ach, total)+bars;
+}
+function liftingCell(rows){
+  const total=sum(rows,r=>r[COL.auctQtyTotal]), ach=sum(rows,r=>r[COL.liftedQty]);
+  return ringBlock(total>0?ach/total*100:null, ach, total)+paBars(total, ach);
+}
+function paymentCell(rows){
+  const total=sum(rows,r=>r[COL.auctValueTotal]), ach=sum(rows,r=>r[COL.payRs]);
+  return ringBlock(total>0?ach/total*100:null, ach, total)+paBars(total, ach);
+}
+const MS_STAGES = [
+  { name:'Reconciliation', sub:'Odoo → Lists → Count', cell:reconCell },
+  { name:'Auction', sub:'Reserve vs Auction Value', cell:auctionCell },
+  { name:'Lifting', sub:'Auctioned → Lifted', cell:liftingCell },
+  { name:'Payment', sub:'Auction Value → Received', cell:paymentCell },
+];
 function renderTab0(data){
-  const order = (window.DASH_META && DASH_META.categoryOrder) || [];
-  const present = uniqueSorted(data.map(r=>r[COL.assetCat]));
-  const cats = order.filter(c=>present.includes(c)).concat(present.filter(c=>!order.includes(c)));
-  const groups = {}; cats.forEach(c=> groups[c] = data.filter(r=>r[COL.assetCat]===c));
-  let h = '<table class="ms-table"><thead><tr><th>Milestone Stage</th>'+
-          cats.map(c=>`<th>${escapeHtml(c)}</th>`).join('')+'</tr></thead><tbody>';
+  const subs = MS_GROUPS.flatMap(g=>g.subs);
+  const byCat = {}; subs.forEach(s=> byCat[s.key] = data.filter(r=>r[COL.assetCat]===s.key));
+  let h = '<table class="ms-table"><thead><tr><th rowspan="2" class="ms-stage-h">Milestone Stage</th>';
+  MS_GROUPS.forEach(g=>{ h += `<th colspan="${g.subs.length}" class="ms-main">${escapeHtml(g.main)}</th>`; });
+  h += '<th rowspan="2" class="ms-total-h">Overall Total<small>All categories</small></th></tr><tr>';
+  subs.forEach(s=>{ h += `<th class="ms-sub">${escapeHtml(s.label)}</th>`; });
+  h += '</tr></thead><tbody>';
   MS_STAGES.forEach(st=>{
     h += `<tr><td class="ms-stage">${st.name}<small>${st.sub}</small></td>`;
-    cats.forEach(c=>{
-      const g = groups[c];
-      const total = st.total(g), ach = st.ach(g);
-      const pct = total>0 ? (ach/total*100) : null;
-      const flag = (pct!==null && pct>100) ? ' <span class="dq-flag" title="Exceeds 100% — source data anomaly">▲</span>' : '';
-      const label = pct===null ? '—' : pct.toFixed(0)+'%';
-      h += `<td class="ms-cell">`+
-           `<div class="ring" style="${ringStyle(pct||0)}"><span>${label}</span></div>`+
-           `<div class="ms-qty"><b>${fmtNum(ach)}</b> / ${fmtNum(total)}${flag}</div>`+
-           paBars(total, ach)+`</td>`;
-    });
-    h += '</tr>';
+    subs.forEach(s=>{ h += `<td class="ms-cell">${st.cell(byCat[s.key])}</td>`; });
+    h += `<td class="ms-cell ms-total">${st.cell(data)}</td></tr>`;
   });
   h += '</tbody></table>';
   document.getElementById('milestoneMatrix').innerHTML = h;

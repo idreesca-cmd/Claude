@@ -435,3 +435,28 @@ Addressed three follow-up requests:
 
 Re-verified full build after all three changes: 11,782 rows, Payment Rs. unchanged, 0 console
 errors, still zero external CDN references, `node --check` clean.
+
+## 16. Category Milestone Overview redesign (session 10)
+
+Reworked tab0 per client design direction:
+- **Grouped header**: asset categories now sit under 3 main categories — **Fixed Assets**
+  (Furniture & Fixture, Motor Vehicles, Sign Boards, Plant & Equipment), **Inventories**
+  (Own Brand (Spices), Rice & Pulses, Branded Goods), **IT Equipment** (ERP = "ERP – Computer
+  & Office Machines", General IT = "Computer & Office Equipment"). Two-row `<thead>` with
+  colspan main headers + sub-category row. `MS_GROUPS` array in renderTab0 drives it.
+  - **Motor Vehicles & Bicycles was not assigned by the client** — placed under Fixed Assets
+    (vehicles = fixed assets) as a default; one-line move in `MS_GROUPS` if they want it elsewhere.
+- **New "Overall Total" last column** — aggregates every category for each row (uses full
+  filtered `data`, so it's complete even if a stray category ever appears). Totals verified:
+  Recon A 2,951,485 / B 1,285,595 / C 1,804,070; Auction reserve 5,030,464 vs value 17,124,785,955;
+  Lifting 930,063; Payment 968,295,511.
+- **Reconciliation row** (renamed from "Physical Verification"): replaced ring + vertical bars
+  with **3 horizontal comparison bars** — A·Odoo (reference/charcoal), B·Lists (% vs A),
+  C·Count (% vs B); each shows qty & %.
+- **Auction row**: removed the vertical Plan/Act bars; kept the ring (Auctioned ÷ Count) and
+  added **horizontal Reserve (Rs) vs Auction Value (Rs)** bars, auction value shown as % of reserve.
+- Lifting + Payment rows unchanged (ring + Plan/Act). Updated the caption + DQ methodology notes.
+- New helpers: `hbar`, `reconCell`, `auctionCell`, `liftingCell`, `paymentCell`, `ringBlock`,
+  `bigPct`; new CSS for grouped headers (`.ms-main`/`.ms-sub`) + horizontal bars (`.hbar-*`);
+  table min-width 1680px (scrolls within the card). Re-verified headless: correct colspans
+  (4/3/2), 9 subs, 4 stages, 50 hbars, total column, 0 console errors, still self-contained.
