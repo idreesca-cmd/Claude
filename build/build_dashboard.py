@@ -433,6 +433,22 @@ sub(r'<label class="slicer-label">Item Category</label>',
     '<label class="slicer-label">Asset Class</label>', label="slicer label")
 sub(r"All Item Categories", "All Asset Classes", count=2, label="slicer all-option")
 
+# 6c) Variance Detail table (Quantity Reconciliation tab): change the two variance columns
+#     from "A − B" / "B − C" to "B − A" / "C − B" (compare B vs A, C vs B — matches the
+#     Reconciliation row and the source's own D=B-A / E=C-B columns). Keep "C − A".
+sub(r"ab: r\.a - r\.b, bc: r\.b - r\.c, ca: r\.c - r\.a",
+    lambda m: "ba: r.b - r.a, cb: r.c - r.b, ca: r.c - r.a", label="variance calc")
+sub(r'<th class="text-right">A − B</th>',
+    lambda m: '<th class="text-right">B − A</th>', label="variance hdr B-A")
+sub(r'<th class="text-right">B − C</th>',
+    lambda m: '<th class="text-right">C − B</th>', label="variance hdr C-B")
+sub(r"""class="\$\{r\.ab<0\?'neg':\(r\.ab>0\?'pos':''\)\}">\$\{fmtSigned\(r\.ab\)\}""",
+    lambda m: """class="${r.ba<0?'neg':(r.ba>0?'pos':'')}">${fmtSigned(r.ba)}""",
+    label="variance cell B-A")
+sub(r"""class="\$\{r\.bc<0\?'neg':\(r\.bc>0\?'pos':''\)\}">\$\{fmtSigned\(r\.bc\)\}""",
+    lambda m: """class="${r.cb<0?'neg':(r.cb>0?'pos':'')}">${fmtSigned(r.cb)}""",
+    label="variance cell C-B")
+
 # 7) header status/label wording
 sub(r"Awaiting data", "Loading…", label="status text")
 sub(r'title="Upload \.xlsx, \.xls, or \.csv"', label="upload title",
