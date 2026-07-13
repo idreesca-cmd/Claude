@@ -74,16 +74,27 @@ def num(v):
         return 0
 
 # ---------------------------------------------------------------- read Database
+# NEW SCHEMA (2026-07 restructure): header NAMES are on ROW 2, data starts ROW 3.
+# Column C = "Assets Class" (main category), D = "Assets Category" (sub-category).
 wb = openpyxl.load_workbook(SRC_XLSX, data_only=True, read_only=True)
 db = wb["Database"]
 ci = openpyxl.utils.column_index_from_string
 def C(row, letter): return row[ci(letter) - 1]
 
-# fixed emit order -> mirrored in the browser bootstrap
-ORDER = ["zone","region","itemCat","assetCat","assetName","aQty","bQty","cQty",
-         "status","auctQtyUsable","auctQtyScrap","auctQtyTotal","reservePriceTotal",
-         "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty","bidder","auctionDate",
-         "ddNo","payDate"]
+# dashboard key -> source column letter (Row-2 names). Order here == baked array order.
+COLMAP = [
+    ("zone","A"), ("region","B"), ("assetClass","C"), ("assetCat","D"), ("assetName","E"),
+    ("uom","G"), ("aQty","I"), ("bQty","J"), ("cQty","K"), ("dBA","L"), ("eCB","M"),
+    ("reservePriceTotal","R"), ("status","S"), ("auctionDate","T"),
+    ("auctQtyUsable","U"), ("auctQtyScrap","V"), ("auctQtyTotal","W"), ("auctQtyTotalKg","X"),
+    ("diffAuctCount","Y"), ("bidder","Z"), ("auctValueTotal","AE"), ("liftingStatus","AF"),
+    ("payDate","AG"), ("payRs","AH"), ("ddNo","AI"), ("liftedQty","AM"), ("liftedKg","AQ"),
+    ("qtyDiscrepancy","AR"), ("kgsDiscrepancy","AS"), ("balanceQty","AT"), ("balanceKg","AU"),
+]
+TEXT_KEYS = {"zone","region","assetClass","assetCat","assetName","uom","status",
+             "liftingStatus","bidder","ddNo"}
+DATE_KEYS = {"auctionDate","payDate"}
+ORDER = [k for k, _ in COLMAP] + ["itemCat"]   # itemCat (slicer) is derived = assetClass
 
 def _dstr(v):
     if v is None or v == "": return ""
@@ -93,33 +104,42 @@ def _dstr(v):
     return str(v).strip()
 
 rows_out = []
-it = db.iter_rows(min_row=2, values_only=True)
-for row in it:
+for row in db.iter_rows(min_row=3, values_only=True):
     if row is None: continue
     zone = norm_zone(C(row, "A"))
-    cat_raw = C(row, "C")
-    name = C(row, "D")
-    if not (zone or name or cat_raw):  # skip fully-blank
+    cls  = str(C(row, "C") or "").strip()
+    name = C(row, "E")
+    if not (zone or cls or name):  # skip fully-blank
         continue
-    cat = norm_cat(cat_raw)
-    if not cat:  # drop the 3 blank-category rows
+    if not cls:                    # need an Assets Class to place the row
         continue
-    rec = [
-        zone, (C(row,"B") or "").strip() if isinstance(C(row,"B"),str) else (C(row,"B") or ""),
-        item_bucket(cat), cat, (name or ""),
-        num(C(row,"E")), num(C(row,"F")), num(C(row,"G")),
-        norm_status(C(row,"S")),
-        num(C(row,"J")), num(C(row,"K")), num(C(row,"L")),
-        num(C(row,"R")), num(C(row,"Y")), num(C(row,"AA")),
-        num(C(row,"AD")), num(C(row,"AE")), num(C(row,"AF")),
-        _dstr(C(row,"U")), _dstr(C(row,"T")),
-        _dstr(C(row,"AB")), _dstr(C(row,"Z")),
-    ]
+    rec = []
+    for key, letter in COLMAP:
+        v = C(row, letter)
+        if key in DATE_KEYS:      rec.append(_dstr(v))
+        elif key in TEXT_KEYS:    rec.append("" if v is None else str(v).strip())
+        else:                     rec.append(num(v))
+    rec.append(cls)                # itemCat = Assets Class
     rows_out.append(rec)
 
-# grand totals (indices into ORDER)
 idx = {k: i for i, k in enumerate(ORDER)}
 def gsum(k): return sum(r[idx[k]] for r in rows_out)
+
+# main-category -> sub-category groups, driven by the data (Assets Class -> Assets Category)
+import collections as _c
+_MAIN_ORDER = ["Fixed Assets", "Inventories", "IT Equipment"]
+_pair = _c.Counter((r[idx["assetClass"]], r[idx["assetCat"]]) for r in rows_out)
+_mains = _MAIN_ORDER + [m for m in dict.fromkeys(r[idx["assetClass"]] for r in rows_out)
+                        if m not in _MAIN_ORDER]
+GROUPS = []
+for _m in _mains:
+    _subs = []
+    for (cl, sc), _n in _pair.most_common():
+        if cl == _m and sc and sc not in _subs:
+            _subs.append(sc)
+    if _subs:
+        GROUPS.append({"main": _m, "subs": _subs})
+
 SOURCE_PATH_LABEL = (r"G:\Shared drives\Clients (except pvt ltd co)\Advisory\Clients - Idrees"
                       r"\Utility Stores Corporation - FAR Auction\USC Dashboard\USD DB MIK"
                       r"\USC_Dashboard_Data_Source_File.xlsx")
@@ -129,11 +149,11 @@ meta = {
     "refreshDate": _now.strftime("%Y-%m-%d %H:%M PKT"),
     "sourcePath": SOURCE_PATH_LABEL,
     "rowCount": len(rows_out),
-    "zones": sorted({r[0] for r in rows_out}),
-    "categoryOrder": CAT_ORDER,
+    "zones": sorted({r[idx["zone"]] for r in rows_out}),
+    "groups": GROUPS,
     "totals": {k: gsum(k) for k in
                ("aQty","bQty","cQty","auctQtyTotal","reservePriceTotal",
-                "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty")},
+                "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty","balanceKg")},
 }
 with open(PU_JSON, encoding="utf-8") as f:
     project_updates = json.load(f)
@@ -262,7 +282,7 @@ TAB0_SECTION = """
               <li><b>Reconciliation</b> (horizontal bars) &mdash; A. Odoo qty (system of record, the reference), B. Physical Lists (% shown vs A. Odoo), C. Physical Count (% shown vs B. Lists).</li>
               <li><b>Auction</b> &mdash; ring = Auctioned Qty &divide; Physical Count; the bars compare <b>Total Reserve Price</b> vs <b>Total Auction Value</b> (Rs), with auction value shown as a % of reserve. <b>Lifting</b> = Lifted Qty &divide; Auctioned Qty. <b>Payment</b> = Payment Received &divide; Total Auction Value.</li>
               <li>Values marked <span class="dq-flag">&#9650;</span> exceed 100% &mdash; genuine source inconsistencies (e.g. count &gt; lists, lifted &gt; auctioned, payment/auction-value &gt; reserve). Figures are shown exactly as recorded and are <b>not clamped</b>; they flag records USC should reconcile at source.</li>
-              <li>Main-category grouping: <b>Fixed Assets</b> = Furniture &amp; Fixture, Motor Vehicles, Sign Boards, Plant &amp; Equipment; <b>Inventories</b> = Own Brand (Spices), Rice &amp; Pulses, Branded Goods; <b>IT Equipment</b> = ERP, General IT.</li>
+              <li>Main-category grouping (<b>Assets Class</b>) and its sub-categories (<b>Assets Category</b>) are read directly from the source file, so the columns update automatically whenever the client re-classifies assets. Current: <b>Fixed Assets</b> = F&amp;F/Boards &amp; Office Equipment, Vehicles; <b>Inventories</b> = Spices, Rice &amp; Pulses; <b>IT Equipment</b> = General IT, ERP IT.</li>
             </ul>
           </div>
         </section>
@@ -327,68 +347,91 @@ TAB56 = """        <section id="tab5" class="tab-pane">
             <div class="kpi-card"><div class="kpi-label">Payment &gt; Auction Value</div><div id="kpi6Pay" class="kpi-value">—</div><div class="kpi-sub">Over-payment vs booked value</div></div>
             <div class="kpi-card"><div class="kpi-label">Auctioned &gt; Counted</div><div id="kpi6Auct" class="kpi-value">—</div><div class="kpi-sub">Sold more than counted</div></div>
           </div>
+          <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="kpi-card"><div class="kpi-label">Qty Discrepancy (source col)</div><div id="kpi6QtyDisc" class="kpi-value">—</div><div id="kpi6QtyDiscSub" class="kpi-sub">Source column AR</div></div>
+            <div class="kpi-card"><div class="kpi-label">KGs Discrepancy (source col)</div><div id="kpi6KgsDisc" class="kpi-value">—</div><div id="kpi6KgsDiscSub" class="kpi-sub">Source column AS</div></div>
+          </div>
           <div class="chart-card"><div class="chart-title">Anomalies by Type</div><div class="chart-sub">Count of records per anomaly category (respects the global slicers)</div><div style="position:relative;height:300px;"><canvas id="chartAnomTypes"></canvas></div></div>
           <div class="chart-card mt-4"><div class="chart-title">Anomaly Detail</div><div class="chart-sub">Every flagged record with the conflicting values (top 500). These are source data-quality issues for USC to reconcile — figures are shown exactly as recorded.</div><div id="anomalyTableWrap" class="data-table-wrap"></div></div>
         </section>
 """
 lit('</main>', TAB56 + '        </main>', label="tab5/6 sections")
 
-# 6) COL: add auctValueTotal + reservePriceTotal
-sub(r"balanceQty:'Balance Qty to be lifted'",
-    "balanceQty:'Balance Qty to be lifted',\n  auctValueTotal:'Total Auction Value', reservePriceTotal:'Total Reserve Price'",
-    label="COL keys")
-# Fix two header-name mismatches vs. the real "Database" sheet (only matters for the
-# manual re-upload path -- the baked JSON boot path maps by array index, not header text).
-# The old embedded-CSV header names ('Auction To Bidder' / 'Balance Qty to be lifted') don't
-# exist in the source workbook, which uses 'Winner Bidder Name' / 'Balance Qty'.
-sub(r"bidder:'Auction To Bidder',", "bidder:'Winner Bidder Name',", label="fix bidder header")
-sub(r"balanceQty:'Balance Qty to be lifted'", "balanceQty:'Balance Qty'", label="fix balanceQty header")
-# pickBestSheet used to grab the first sheet whose NAME contains "recon" before checking
-# headers -- the workbook now has a "Reconciliation Summary" tab (2-col totals, not data)
-# which matched that regex and won over the real "Database" sheet. Check the header
-# signature first; only fall back to the name-regex if no sheet has matching headers.
+# 6) NEW SCHEMA — replace COL / NUMERIC_COLS so the manual "Refresh Data" upload (which reads
+#    by header NAME) matches the restructured file's Row-2 headers. The baked-JSON boot path
+#    maps by array index (handled in the Python extraction above).
+NEW_COL = ("const COL = {\n"
+    "  zone:'Zone', region:'Region', assetClass:'Assets Class', itemCat:'Item Category', assetCat:'Assets Category', assetName:'Asset Name (Matched)', uom:'Unit of Measure',\n"
+    "  aQty:'A QTY (Odoo)', bQty:'B QTY (Physical Lists)', cQty:'C QTY (Physical Count)', dBA:'D=B-A', eCB:'E=C-B',\n"
+    "  status:'Auction Status', liftingStatus:'Lifting Status', auctionDate:'Auction Date',\n"
+    "  auctQtyUsable:'Auction Qty Usable', auctQtyScrap:'Auction Qty Scrap', auctQtyTotal:'Auction Qty Total', auctQtyTotalKg:'Auction Qty Total KGs', diffAuctCount:'Diff Qty Auction vs Count',\n"
+    "  bidder:'Auction To Bidder',\n"
+    "  rpUsable:'Total Reserve Price Usable', rpScrap:'Total Reserve Price Scrape', reservePriceTotal:'Overall Reserve Price Total',\n"
+    "  apUsable:'Auction Price Usable (Per Unit)', apScrap:'Auction Price Scrape (Per Unit)', auctValueTotal:'Total Auction Value',\n"
+    "  payDate:'Payment Date', payRs:'Payment Rs.', ddNo:'Payment Demand Draft (DD) No.',\n"
+    "  liftDate:'Lifting Date', liftedQty:'Total Lifted Qty Units', liftedKg:'Total Lifted Qty KGs',\n"
+    "  balanceQty:'Balance Qty in Units', balanceKg:'Balance Qty in KGs',\n"
+    "  qtyDiscrepancy:'Qty Discrepancy', kgsDiscrepancy:'KGs Discrepancy'\n"
+    "}")
+sub(r"const COL = \{.*?\}", lambda m: NEW_COL, flags=re.DOTALL, label="COL object")
+
+NEW_NUM = ("const NUMERIC_COLS = [\n"
+    "  COL.aQty, COL.bQty, COL.cQty, COL.dBA, COL.eCB,\n"
+    "  COL.auctQtyUsable, COL.auctQtyScrap, COL.auctQtyTotal, COL.auctQtyTotalKg, COL.diffAuctCount,\n"
+    "  COL.rpUsable, COL.rpScrap, COL.reservePriceTotal, COL.apUsable, COL.apScrap, COL.auctValueTotal,\n"
+    "  COL.payRs, COL.liftedQty, COL.liftedKg, COL.balanceQty, COL.balanceKg,\n"
+    "  COL.qtyDiscrepancy, COL.kgsDiscrepancy\n"
+    "]")
+sub(r"const NUMERIC_COLS = \[.*?\]", lambda m: NEW_NUM, flags=re.DOTALL, label="NUMERIC_COLS")
+
+# pickBestSheet: prefer header-signature (row 2 holds names now) over the name-regex,
+# and read the header from row 2 (index 1) when row 1 is the marker row.
 sub(r"const reconMatch = names\.find\(n => /recon/i\.test\(n\)\);\s*\n\s*if \(reconMatch\) return reconMatch;\s*\n\s*// 2\) header signature match\s*\n\s*const sig = \['Zone','Asset Name \(Matched\)'\];",
-    "// 1) header signature match (preferred -- a sheet literally named like \"...recon...\"\n"
-    "  // may just be a totals/summary tab, not the data table)\n"
-    "  const sig = ['Zone','Asset Name (Matched)'];",
-    label="pickBestSheet: signature before name-regex")
+    "// header-signature match first (row 2 holds the column names in this workbook)\n"
+    "  const sig = ['Zone','Assets Category','Asset Name (Matched)'];",
+    label="pickBestSheet: sig")
+sub(r"const headerRow = XLSX\.utils\.sheet_to_json\(ws, \{ header:1, defval:'' \}\)\[0\] \|\| \[\];",
+    "const _hr = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });\n"
+    "    const headerRow = (_hr[1] && _hr[1].some(x => String(x).trim())) ? _hr[1] : (_hr[0] || []);",
+    label="pickBestSheet: row2 header")
+sub(r"if \(sig\.every\(s => hdrs\.includes\(s\)\)\) return n;\s*\n\s*\}\s*\n\s*// 3\) first non-empty sheet",
+    "if (sig.every(s => hdrs.includes(s))) return n;\n"
+    "  }\n"
+    "  // fall back: a sheet named like \"database\" or \"recon\"\n"
+    "  const nm = names.find(n => /database|recon/i.test(n));\n"
+    "  if (nm) return nm;\n"
+    "  // first non-empty sheet",
+    label="pickBestSheet: fallback")
+
+# handleExcel: this workbook has a MARKER row (row 1) above the header row (row 2). Detect it
+# and read with range:<hdrRow> so the header is row 2 and data starts at row 3.
+sub(r"const rawRows = XLSX\.utils\.sheet_to_json\(wb\.Sheets\[sheetName\], \{ defval:'', raw:true \}\);",
+    "const _probe = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, defval:'' });\n"
+    "      const _hdrRow = ((_probe[0]||[]).map(x=>String(x).trim()).includes('Zone')) ? 0 : 1;\n"
+    "      const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval:'', raw:true, range:_hdrRow });",
+    label="handleExcel: header-row detect")
+
+# cleanRow: trim text fields + derive itemCat (the 'Asset Class' slicer) = Assets Class.
 _cleanrow_repl = (
-    "[COL.zone, COL.region, COL.itemCat, COL.assetCat, COL.assetName, COL.status, COL.bidder, COL.ddNo]\n"
+    "[COL.zone, COL.region, COL.assetClass, COL.assetCat, COL.assetName, COL.status, COL.liftingStatus, COL.bidder, COL.ddNo]\n"
     " .forEach(c => { out[c] = (out[c]===null||out[c]===undefined) ? '' : String(out[c]).trim(); });\n"
-    " // Match the same zone/category normalization the build pipeline applies, so a manual\n"
-    " // \"Refresh Data\" upload of the raw Database sheet looks identical in quality.\n"
-    " if(out[COL.zone].toUpperCase()==='SUKKUR') out[COL.zone]='Sukkur';\n"
-    " const _cm={'FURNITURE, FIXTURE AND OFFICE':'Furniture, Fixture & Office','MOTOR VEHICLES AND BICYCLES':'Motor Vehicles & Bicycles',\n"
-    "  'SIGN BOARDS':'Sign Boards','COMPUTER AND OFFICE MACHINE/EQUIPMENT':'Computer & Office Equipment','PLANT AND EQUIPMENT':'Plant & Equipment',\n"
-    "  'ERP - COMPUTER & OFFICE MACHINES':'ERP – Computer & Office Machines','ERP - COMPUTER AND IT EQUIPMENT':'ERP – Computer & Office Machines',\n"
-    "  'ERP COMPUTER AND IT EQUIPMENT':'ERP – Computer & Office Machines','ERP':'ERP – Computer & Office Machines','OWN BRAND':'Own Brand',\n"
-    "  'RICE & PULSES':'Rice & Pulses','BRANDED GOODS (BG) NON FOOD':'Branded Goods (Non-Food)'};\n"
-    " const _ck=out[COL.assetCat].replace(/\\s+/g,' ').trim().toUpperCase();\n"
-    " if(_cm[_ck]) out[COL.assetCat]=_cm[_ck];\n"
-    " const _s=out[COL.status].replace(/\\s+/g,' ').trim().toUpperCase();\n"
-    " if(_s==='AUCTIONED') out[COL.status]='Auctioned'; else if(_s==='NOT AUCTIONED') out[COL.status]='Not Auctioned';\n"
-    " else if(_s==='PENDING') out[COL.status]='Pending'; else if(_s==='CONSIGNMENT') out[COL.status]='Consignment';\n"
+    " if((out[COL.zone]||'').toUpperCase()==='SUKKUR') out[COL.zone]='Sukkur';\n"
+    " out[COL.itemCat] = out[COL.assetClass] || '';\n"
     " return out;")
+sub(r"\[COL\.zone, COL\.region, COL\.itemCat, COL\.assetCat, COL\.assetName, COL\.status, COL\.bidder, COL\.ddNo\]\s*\n\s*\.forEach\(c => \{ out\[c\] = \(out\[c\]===null\|\|out\[c\]===undefined\) \? '' : String\(out\[c\]\)\.trim\(\); \}\);\s*\n\s*return out;",
+    lambda m: _cleanrow_repl, label="cleanRow normalization")
+
+# manual-upload status: append a PKT sync timestamp
 sub(r"setStatus\(`\$\{RAW\.length\.toLocaleString\(\)\} records loaded from \$\{filename\}\$\{sheetSuffix\}`, true\);",
     lambda m: ("setStatus(`${RAW.length.toLocaleString()} records loaded from ${filename}${sheetSuffix}"
                " · last synced ${new Date(Date.now()+5*3600*1000).toISOString().slice(0,16).replace('T',' ')} PKT`, true);"),
     label="upload status timestamp")
-sub(r"\[COL\.zone, COL\.region, COL\.itemCat, COL\.assetCat, COL\.assetName, COL\.status, COL\.bidder, COL\.ddNo\]\s*\n\s*\.forEach\(c => \{ out\[c\] = \(out\[c\]===null\|\|out\[c\]===undefined\) \? '' : String\(out\[c\]\)\.trim\(\); \}\);\s*\n\s*return out;",
-    lambda m: _cleanrow_repl, label="cleanRow normalization")
 
-sub(r"if \(sig\.every\(s => hdrs\.includes\(s\)\)\) return n;\s*\n\s*\}\s*\n\s*// 3\) first non-empty sheet",
-    "if (sig.every(s => hdrs.includes(s))) return n;\n"
-    "  }\n"
-    "  // 2) fall back: sheet name containing \"recon\"\n"
-    "  const reconMatch = names.find(n => /recon/i.test(n));\n"
-    "  if (reconMatch) return reconMatch;\n"
-    "  // 3) first non-empty sheet",
-    label="pickBestSheet: name-regex fallback")
-# The manual-upload path (cleanRow) must also normalize the two fields added for the
-# new tabs, or a re-uploaded workbook would leave them as raw strings.
-sub(r"COL\.liftedQty, COL\.liftedKg, // 23-24",
-    "COL.liftedQty, COL.liftedKg, // 23-24\n COL.reservePriceTotal, COL.auctValueTotal, // reserve/auction value totals",
-    label="NUMERIC_COLS extend")
+# 6b) Relabel the "Item Category" slicer -> "Asset Class" (it now holds Fixed Assets /
+#     Inventories / IT Equipment, the main classes from the source's Assets Class column).
+sub(r'<label class="slicer-label">Item Category</label>',
+    '<label class="slicer-label">Asset Class</label>', label="slicer label")
+sub(r"All Item Categories", "All Asset Classes", count=2, label="slicer all-option")
 
 # 7) header status/label wording
 sub(r"Awaiting data", "Loading…", label="status text")
@@ -436,26 +479,8 @@ sub(r"\$\{rows\.map\(r => `\s*\n\s*<tr>\s*\n\s*<td>\$\{escapeHtml\(r\.zone\)\}</
 # 10) inject renderTab0 / renderTab4 before the empty-state block
 NEW_JS = r"""
 /* ==================== TAB 0 — CATEGORY MILESTONE OVERVIEW ==================== */
-/* Main categories -> sub-categories. `key` must match the normalized assetCat values.
-   NOTE: "Motor Vehicles & Bicycles" was not assigned by the client; placed under Fixed
-   Assets (vehicles are fixed assets) as a sensible default — trivially movable here. */
-const MS_GROUPS = [
-  { main:'Fixed Assets', subs:[
-      {key:'Furniture, Fixture & Office', label:'Furniture & Fixture'},
-      {key:'Motor Vehicles & Bicycles', label:'Motor Vehicles'},
-      {key:'Sign Boards', label:'Sign Boards'},
-      {key:'Plant & Equipment', label:'Plant & Equipment'},
-  ]},
-  { main:'Inventories', subs:[
-      {key:'Own Brand', label:'Own Brand (Spices)'},
-      {key:'Rice & Pulses', label:'Rice & Pulses'},
-      {key:'Branded Goods (Non-Food)', label:'Branded Goods'},
-  ]},
-  { main:'IT Equipment', subs:[
-      {key:'ERP – Computer & Office Machines', label:'ERP'},
-      {key:'Computer & Office Equipment', label:'General IT'},
-  ]},
-];
+/* Main-category -> sub-category grouping is now DATA-DRIVEN: the source file provides
+   "Assets Class" (main) and "Assets Category" (sub), baked into DASH_META.groups. */
 function ringStyle(pct){
   const deg = Math.max(0, Math.min(100, pct))*3.6;
   const arc = pct>100 ? 'var(--bt-amber)' : 'var(--bt-lime-deep)';
@@ -519,16 +544,17 @@ const MS_STAGES = [
   { name:'Payment', sub:'Auction Value → Received', cell:paymentCell },
 ];
 function renderTab0(data){
-  const subs = MS_GROUPS.flatMap(g=>g.subs);
-  const byCat = {}; subs.forEach(s=> byCat[s.key] = data.filter(r=>r[COL.assetCat]===s.key));
+  const groups = (window.DASH_META && DASH_META.groups) || [];
+  const subs = groups.flatMap(g=>g.subs);              // flat list of sub-category names
+  const byCat = {}; subs.forEach(s=> byCat[s] = data.filter(r=>r[COL.assetCat]===s));
   let h = '<table class="ms-table"><thead><tr><th rowspan="2" class="ms-stage-h">Milestone Stage</th>';
-  MS_GROUPS.forEach(g=>{ h += `<th colspan="${g.subs.length}" class="ms-main">${escapeHtml(g.main)}</th>`; });
+  groups.forEach(g=>{ h += `<th colspan="${g.subs.length}" class="ms-main">${escapeHtml(g.main)}</th>`; });
   h += '<th rowspan="2" class="ms-total-h">Overall Total<small>All categories</small></th></tr><tr>';
-  subs.forEach(s=>{ h += `<th class="ms-sub">${escapeHtml(s.label)}</th>`; });
+  subs.forEach(s=>{ h += `<th class="ms-sub">${escapeHtml(s)}</th>`; });
   h += '</tr></thead><tbody>';
   MS_STAGES.forEach(st=>{
     h += `<tr><td class="ms-stage">${st.name}<small>${st.sub}</small></td>`;
-    subs.forEach(s=>{ h += `<td class="ms-cell">${st.cell(byCat[s.key])}</td>`; });
+    subs.forEach(s=>{ h += `<td class="ms-cell">${st.cell(byCat[s])}</td>`; });
     h += `<td class="ms-cell ms-total">${st.cell(data)}</td></tr>`;
   });
   h += '</tbody></table>';
@@ -653,6 +679,14 @@ function renderTab6(data){
   set('kpi6Lift',fmtNum(byType['Lifted > Auctioned']||0));
   set('kpi6Pay',fmtNum(byType['Payment > Auction Value']||0));
   set('kpi6Auct',fmtNum(byType['Auctioned > Counted']||0));
+  // Source discrepancy columns (AR/AS) — the user marked them for the dashboard but they are
+  // currently empty in the source; show the total if populated, else an "awaiting data" note.
+  const qd=sum(data,r=>r[COL.qtyDiscrepancy]), kd=sum(data,r=>r[COL.kgsDiscrepancy]);
+  const nq=data.filter(r=>(r[COL.qtyDiscrepancy]||0)!==0).length, nk=data.filter(r=>(r[COL.kgsDiscrepancy]||0)!==0).length;
+  set('kpi6QtyDisc', nq? fmtNum(qd) : '—');
+  set('kpi6KgsDisc', nk? fmtNum(kd) : '—');
+  const qs=document.getElementById('kpi6QtyDiscSub'); if(qs) qs.textContent = nq? `${fmtNum(nq)} rows populated` : 'Awaiting data in source (col AR)';
+  const ks=document.getElementById('kpi6KgsDiscSub'); if(ks) ks.textContent = nk? `${fmtNum(nk)} rows populated` : 'Awaiting data in source (col AS)';
   destroyChart('chartAnomTypes');
   const tl=Object.keys(byType);
   if(tl.length){
@@ -738,8 +772,10 @@ BOOT = r"""(function(){
   window.DASH_META = meta.meta; window.DASH_UPDATES = meta.updates;
   const cols = meta.cols;
   RAW = meta.rows.map(a => { const o={}; cols.forEach((c,i)=>{ o[COL[c]] = a[i]; });
-    // ensure keys used by render code exist
-    o[COL.itemCat]=o[COL.itemCat]||''; return o; });
+    // default any numeric COL not present in the baked payload to 0 (avoids NaN in sums)
+    NUMERIC_COLS.forEach(k=>{ if(typeof o[k] !== 'number') o[k] = Number(o[k]) || 0; });
+    o[COL.itemCat] = o[COL.itemCat] || o[COL.assetClass] || '';   // 'Asset Class' slicer
+    return o; });
   hydrateSlicers(); renderAll(); renderUpdates();
   const d = meta.meta.refreshDate || '';
   const sp = document.getElementById('sourcePath');

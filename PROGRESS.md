@@ -460,3 +460,39 @@ Reworked tab0 per client design direction:
   `bigPct`; new CSS for grouped headers (`.ms-main`/`.ms-sub`) + horizontal bars (`.hbar-*`);
   table min-width 1680px (scrolls within the card). Re-verified headless: correct colspans
   (4/3/2), 9 subs, 4 stages, 50 hbars, total column, 0 console errors, still self-contained.
+
+## 17. Re-mapped to restructured source file + stopped auto-refresh (session 11)
+
+The client replaced the source with a **fundamentally restructured** `USC_Dashboard_Data_Source_File.xlsx`
+(the file the dashboard now targets). Key changes handled:
+- **Structure:** header NAMES now on **Row 2**, a "Dashboard" include-marker on **Row 1**, data from
+  **Row 3**. 47 columns (was 37), **600 rows, Sukkur-only** (was ~11,785 across 9 zones).
+- **Grouping baked into data:** col **C "Assets Class"** = main category (Fixed Assets / Inventories /
+  IT Equipment), col **D "Assets Category"** = sub. renderTab0 is now **data-driven** from
+  `DASH_META.groups` (no hardcoded categories) — Fixed Assets→{F&F Boards & Office Equipment, Vehicles},
+  Inventories→{Spices, Rice & Pulses}, IT Equipment→{General IT, ERP IT}. The old "Motor Vehicles
+  placement" question is moot — the client defined the groups.
+- **Column re-map:** rewrote the Python extraction (COLMAP by letter, row-3 start) and the JS `COL`
+  object / `NUMERIC_COLS` to the new Row-2 header names, so BOTH the baked path and the manual
+  "Refresh Data" upload work. The upload path now auto-detects the Row-1 marker row and reads the
+  header from Row 2 (`range` offset in `sheet_to_json`); `pickBestSheet` prefers the header signature.
+- **"Item Category" slicer → "Asset Class"** (now holds the 3 real main classes).
+- **Cleaner data:** the old inflated anomaly is gone — Total Auction Value is now Rs 53.1M vs Reserve
+  Rs 36.6M (realistic). New totals: Odoo 182,351 · Lists 179,835 · Count 180,760 · Auction Qty 223,072
+  · Payment Rs 29,378,177 · Lifted 127,457 units.
+- **Auto-refresh STOPPED** per user: deleted Routine `trig_01XhvCr9N6sjhHaY26je5ou7` (and the earlier
+  one). The dashboard now refreshes ONLY via the in-page "Refresh Data" button. No scheduled triggers remain.
+
+### Discrepancies flagged to the user (per their request)
+- `AR "Qty Discrepancy"` & `AS "KGs Discrepancy"` are marked for the dashboard but **100% empty** →
+  surfaced on the Anomalies tab as "Awaiting data in source (col AR/AS)" per user choice.
+- `Payment Date (AG)` & `DD No. (AI)` are **not** in the marked columns but the Payments & DD tab
+  needs them → user chose to **keep DD detail**; included with a note.
+- `Reconciliation Summary` still has the 15 `#REF!` (source pivot sheets deleted) — **ignored** per
+  the user's earlier standing decision; does not affect the dashboard.
+- Minor: `G "Unit of Measure"` only 88/600 populated; `P "Total Reserve Price Usable"` all-zero
+  (reserve sits in the Scrape bucket); header `O` had a stray leading space.
+
+Re-verified headless (all 7 tabs, 0 console errors) AND end-to-end **Refresh-Data upload of the new
+file** (600 records, correct sheet, Payment matches baked build, groups correct). Still self-contained
+(0 external requests).
