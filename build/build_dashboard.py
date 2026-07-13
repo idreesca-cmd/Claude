@@ -90,18 +90,39 @@ COLMAP = [
     ("diffAuctCount","Y"), ("bidder","Z"), ("auctValueTotal","AE"), ("liftingStatus","AF"),
     ("payDate","AG"), ("payRs","AH"), ("ddNo","AI"), ("liftedQty","AM"), ("liftedKg","AQ"),
     ("qtyDiscrepancy","AR"), ("kgsDiscrepancy","AS"), ("balanceQty","AT"), ("balanceKg","AU"),
+    ("liftDate","AJ"),
 ]
 TEXT_KEYS = {"zone","region","assetClass","assetCat","assetName","uom","status",
              "liftingStatus","bidder","ddNo"}
-DATE_KEYS = {"auctionDate","payDate"}
+DATE_KEYS = {"auctionDate","payDate","liftDate"}
 ORDER = [k for k, _ in COLMAP] + ["itemCat"]   # itemCat (slicer) is derived = assetClass
 
-def _dstr(v):
+# Category label normalization (every mapping logged). Keep OB and M&B distinct — here the
+# only variant is "Spices" -> "OB - Spices" (both are Own-Brand spices under Inventories;
+# no M&B label exists, so nothing is merged across sub-groups).
+CAT_NORMALIZE = {"Spices": "OB - Spices"}
+_cat_norm_count = 0
+
+def parse_date_iso(v):
+    """YYYY-MM-DD or '' — handles Excel datetimes, D-M-YYYY / D/M/YYYY text, and treats
+    time-only junk (e.g. '00:00:00') as MISSING."""
     if v is None or v == "": return ""
-    if hasattr(v, "date"):
-        try: return v.date().isoformat()
-        except Exception: return str(v).strip()
-    return str(v).strip()
+    if hasattr(v, "year") and hasattr(v, "month"):
+        try: return (v.date() if hasattr(v, "date") else v).isoformat()
+        except Exception: return ""
+    s = str(v).strip()
+    if not s: return ""
+    if re.fullmatch(r"\d{1,2}:\d{2}(:\d{2})?", s): return ""            # time-only junk
+    m = re.fullmatch(r"(\d{1,2})[\-/.](\d{1,2})[\-/.](\d{2,4})", s)      # D-M-YYYY / D/M/YYYY
+    if m:
+        d, mo, y = (int(x) for x in m.groups())
+        if y < 100: y += 2000
+        try: return datetime.date(y, mo, d).isoformat()
+        except ValueError:
+            try: return datetime.date(y, d, mo).isoformat()
+            except ValueError: return ""
+    try: return datetime.date.fromisoformat(s[:10]).isoformat()
+    except Exception: return ""
 
 rows_out = []
 for row in db.iter_rows(min_row=3, values_only=True):
@@ -116,9 +137,17 @@ for row in db.iter_rows(min_row=3, values_only=True):
     rec = []
     for key, letter in COLMAP:
         v = C(row, letter)
-        if key in DATE_KEYS:      rec.append(_dstr(v))
-        elif key in TEXT_KEYS:    rec.append("" if v is None else str(v).strip())
-        else:                     rec.append(num(v))
+        if key in DATE_KEYS:
+            rec.append(parse_date_iso(v))
+        elif key == "assetCat":
+            cat = str(v or "").strip()
+            if cat in CAT_NORMALIZE:
+                cat = CAT_NORMALIZE[cat]; _cat_norm_count += 1
+            rec.append(cat)
+        elif key in TEXT_KEYS:
+            rec.append("" if v is None else str(v).strip())
+        else:
+            rec.append(num(v))
     rec.append(cls)                # itemCat = Assets Class
     rows_out.append(rec)
 
@@ -151,6 +180,7 @@ meta = {
     "rowCount": len(rows_out),
     "zones": sorted({r[idx["zone"]] for r in rows_out}),
     "groups": GROUPS,
+    "dq": {"categoriesNormalized": _cat_norm_count, "categoryMap": CAT_NORMALIZE},
     "totals": {k: gsum(k) for k in
                ("aQty","bQty","cQty","auctQtyTotal","reservePriceTotal",
                 "auctValueTotal","payRs","liftedQty","liftedKg","balanceQty","balanceKg")},
@@ -256,7 +286,38 @@ TAB0_CSS = """
  .pa-legend{font-size:9.5px;color:#9CA3AF;margin-top:3px;letter-spacing:.03em;}
  .dq-flag{color:var(--bt-amber);font-weight:700;cursor:help;}
 """
-sub(r"</style>", TAB0_CSS + " .status-pill{white-space:nowrap} #sourcePath{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}</style>", label="tab0 css")
+TAB1_CSS = """
+ /* Overall Project Status — narrative redesign */
+ .story-intro{background:linear-gradient(90deg,var(--bt-mint),#fff);border-left:4px solid var(--bt-lime-deep);border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:13.5px;color:#374151;line-height:1.6;}
+ .story-intro b{color:var(--bt-slate);}
+ .sort-toggle{display:inline-flex;gap:4px;}
+ .sort-btn{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid var(--bt-border);background:#fff;color:var(--bt-muted);cursor:pointer;}
+ .sort-btn.active{background:var(--bt-charcoal);color:#fff;border-color:var(--bt-charcoal);}
+ .comp-legend{display:flex;flex-direction:column;gap:5px;margin-top:12px;}
+ .comp-legend .lg-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+ .comp-legend .lg-sw{width:12px;height:12px;border-radius:3px;flex:none;}
+ .comp-legend .lg-name{flex:1;color:#374151;}
+ .comp-legend .lg-val{font-weight:700;color:var(--bt-slate);}
+ .comp-legend .lg-pct{color:var(--bt-muted);width:56px;text-align:right;}
+ .status-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;}
+ .dq-note{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;font-size:12px;color:#78350F;line-height:1.7;margin-top:6px;}
+ .dq-note b{color:#92400E;}
+ /* Database tab */
+ .db-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;}
+ .db-toolbar input,.db-toolbar select{font-size:12px;padding:6px 10px;border:1px solid var(--bt-border);border-radius:7px;background:#fff;color:var(--bt-slate);}
+ .db-toolbar input{min-width:230px;flex:1;}
+ .db-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;}
+ .db-table thead th{position:sticky;top:0;z-index:2;background:var(--bt-charcoal);color:#fff;font-weight:600;padding:9px 10px;text-align:left;cursor:pointer;white-space:nowrap;user-select:none;}
+ .db-table thead th.num{text-align:right;}
+ .db-table thead th .arw{opacity:.45;font-size:10px;margin-left:4px;}
+ .db-table thead th.sorted{background:#1b1f26;}
+ .db-table thead th.sorted .arw{opacity:1;}
+ .db-table td{padding:7px 10px;border-bottom:1px solid var(--bt-border);white-space:nowrap;color:#374151;}
+ .db-table tbody tr:nth-child(even){background:#FAFBFC;}
+ .db-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+ .db-count{font-size:11.5px;color:var(--bt-muted);margin-top:8px;}
+"""
+sub(r"</style>", TAB0_CSS + TAB1_CSS + " #sourcePath{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}</style>", label="tab0/tab1 css")
 
 # 3) nav — add tab0, drop pending pill, tab0 active
 sub(r'<button class="tab-btn active" data-tab="tab1">Overall Project Status</button>',
@@ -289,6 +350,70 @@ TAB0_SECTION = """
 
         <section id="tab1" class="tab-pane">"""
 sub(r'<section id="tab1" class="tab-pane active">', TAB0_SECTION, label="tab0 section")
+
+# 4b) tab1 — REDESIGN as a top-to-bottom narrative: verified base → advertised →
+#     auctioned → lifted → stuck (and for how long). Replaces the whole old tab1 markup
+#     (the chartStatus / chartByRegion / chartByCat cards). renderTab1 is overridden in NEW_JS.
+TAB1_SECTION = """<section id="tab1" class="tab-pane">
+          <div class="story-intro">
+            The disposal programme end-to-end: from the <b>verified base</b> we physically counted, to what has been
+            <b>put to auction</b>, <b>lifted</b> by buyers, and what remains <b>stuck awaiting lifting</b> &mdash; and for how long.
+            Figures respect the global Zone / Region slicers. Consignment stock is shown for context but excluded from auction &amp; lifting rates.
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <div class="kpi-card"><div class="kpi-label">Verified Base Qty</div><div id="k1Total" class="kpi-value">&mdash;</div><div id="k1TotalSub" class="kpi-sub">Physically counted units</div></div>
+            <div class="kpi-card"><div class="kpi-label">Auction in Process</div><div id="k1Proc" class="kpi-value">&mdash;</div><div id="k1ProcSub" class="kpi-sub">Advertised, not concluded</div></div>
+            <div class="kpi-card"><div class="kpi-label">Auctioned Qty</div><div id="k1Auct" class="kpi-value">&mdash;</div><div id="k1AuctSub" class="kpi-sub">&mdash; of verified base</div></div>
+            <div class="kpi-card"><div class="kpi-label">Lifted Qty</div><div id="k1Lift" class="kpi-value">&mdash;</div><div id="k1LiftSub" class="kpi-sub">&mdash; of auctioned</div></div>
+            <div class="kpi-card"><div class="kpi-label">Lifting Pending Qty</div><div id="k1Pend" class="kpi-value">&mdash;</div><div id="k1PendSub" class="kpi-sub">&mdash; of auctioned</div></div>
+            <div class="kpi-card"><div class="kpi-label">Consignment Qty</div><div id="k1Cons" class="kpi-value">&mdash;</div><div id="k1ConsSub" class="kpi-sub">Excluded from rates</div></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="chart-card">
+              <div class="chart-title">Where the verified base stands today</div>
+              <div class="chart-sub">Every counted unit by its derived disposal status (Consignment included for context). Tooltip shows qty &amp; share.</div>
+              <div style="position:relative;height:300px;"><canvas id="chartComposition"></canvas></div>
+              <div id="compLegend" class="comp-legend"></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title">Of what we auctioned, how much is actually lifted?</div>
+              <div class="chart-sub">Auctioned quantity split into lifted vs still-to-lift (Consignment excluded).</div>
+              <div style="position:relative;height:300px;"><canvas id="chartLiftPie"></canvas></div>
+            </div>
+          </div>
+          <div class="chart-card mb-4">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+              <div><div class="chart-title">Which zones carry the most &mdash; and how far have they moved?</div>
+                <div class="chart-sub">Verified base vs auctioned vs lifted quantity per zone.</div></div>
+              <div class="sort-toggle" id="zoneSort"><button class="sort-btn active" data-dir="desc">Total &darr;</button><button class="sort-btn" data-dir="asc">Total &uarr;</button></div>
+            </div>
+            <div style="position:relative;height:340px;"><canvas id="chartZoneCmp"></canvas></div>
+          </div>
+          <div class="chart-card mb-4">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+              <div><div class="chart-title">Region-level detail, grouped by zone</div>
+                <div class="chart-sub">Verified base vs auctioned vs lifted quantity per region. Default order follows each parent zone; labels are prefixed with the zone.</div></div>
+              <div class="sort-toggle" id="regionSort"><button class="sort-btn active" data-dir="zone">By zone</button><button class="sort-btn" data-dir="desc">Total &darr;</button><button class="sort-btn" data-dir="asc">Total &uarr;</button></div>
+            </div>
+            <div style="position:relative;height:560px;"><canvas id="chartRegionCmp"></canvas></div>
+          </div>
+          <div class="chart-card mb-4">
+            <div class="chart-title">How long has auctioned stock been stuck awaiting lifting?</div>
+            <div class="chart-sub" id="agingSub">Days since auction date for auctioned-but-not-fully-lifted lots, as of today.</div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+              <div style="position:relative;height:300px;"><canvas id="chartAging"></canvas></div>
+              <div id="agingTableWrap"></div>
+            </div>
+          </div>
+          <div class="chart-card mb-4">
+            <div class="chart-title">Top 10 longest-pending lots</div>
+            <div class="chart-sub">Auctioned lots with the most days elapsed since auction and still not fully lifted.</div>
+            <div id="agingTopWrap" class="data-table-wrap"></div>
+          </div>
+          <div class="dq-note" id="dqNote"></div>
+        </section>"""
+sub(r'<section id="tab1" class="tab-pane">.*?</section>', lambda m: TAB1_SECTION,
+    flags=re.DOTALL, label="tab1 narrative section")
 
 # 5) tab4 — replace awaiting-card with real KPIs + table
 TAB4_SECTION = """<section id="tab4" class="tab-pane">
@@ -323,8 +448,9 @@ sub(r'<div class="awaiting-card" style="padding:24px;">.*?</section>',
 lit('<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>',
     '<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>\n'
     '        <button class="tab-btn" data-tab="tab5">Payments &amp; DD Detail</button>\n'
-    '        <button class="tab-btn" data-tab="tab6">Anomalies</button>',
-    label="nav tab5/6")
+    '        <button class="tab-btn" data-tab="tab6">Anomalies</button>\n'
+    '        <button class="tab-btn" data-tab="tab7">Database</button>',
+    label="nav tab5/6/7")
 
 # 5d) new sections for Payments + Anomalies (inserted before </main>)
 TAB56 = """        <section id="tab5" class="tab-pane">
@@ -354,8 +480,24 @@ TAB56 = """        <section id="tab5" class="tab-pane">
           <div class="chart-card"><div class="chart-title">Anomalies by Type</div><div class="chart-sub">Count of records per anomaly category (respects the global slicers)</div><div style="position:relative;height:300px;"><canvas id="chartAnomTypes"></canvas></div></div>
           <div class="chart-card mt-4"><div class="chart-title">Anomaly Detail</div><div class="chart-sub">Every flagged record with the conflicting values (top 500). These are source data-quality issues for USC to reconcile — figures are shown exactly as recorded.</div><div id="anomalyTableWrap" class="data-table-wrap"></div></div>
         </section>
+        <section id="tab7" class="tab-pane">
+          <div class="chart-card">
+            <div class="chart-title">Database &mdash; Full Asset-Line Register</div>
+            <div class="chart-sub">Every asset line with its derived disposal status. Type to search, use the drop-downs to filter, and click any column header to sort ascending / descending. Respects the global Zone / Region slicers.</div>
+            <div class="db-toolbar">
+              <input id="dbSearch" type="text" placeholder="Search zone, region, category, asset, status, bidder&hellip;" oninput="renderTab7(getFiltered())">
+              <select id="dbFZone" onchange="renderTab7(getFiltered())"><option value="">All Zones</option></select>
+              <select id="dbFRegion" onchange="renderTab7(getFiltered())"><option value="">All Regions</option></select>
+              <select id="dbFClass" onchange="renderTab7(getFiltered())"><option value="">All Asset Classes</option></select>
+              <select id="dbFCat" onchange="renderTab7(getFiltered())"><option value="">All Categories</option></select>
+              <select id="dbFStatus" onchange="renderTab7(getFiltered())"><option value="">All Statuses</option></select>
+            </div>
+            <div id="dbTableWrap" class="data-table-wrap" style="max-height:640px;"></div>
+            <div id="dbCount" class="db-count"></div>
+          </div>
+        </section>
 """
-lit('</main>', TAB56 + '        </main>', label="tab5/6 sections")
+lit('</main>', TAB56 + '        </main>', label="tab5/6/7 sections")
 
 # 6) NEW SCHEMA — replace COL / NUMERIC_COLS so the manual "Refresh Data" upload (which reads
 #    by header NAME) matches the restructured file's Row-2 headers. The baked-JSON boot path
@@ -416,10 +558,15 @@ _cleanrow_repl = (
     "[COL.zone, COL.region, COL.assetClass, COL.assetCat, COL.assetName, COL.status, COL.liftingStatus, COL.bidder, COL.ddNo]\n"
     " .forEach(c => { out[c] = (out[c]===null||out[c]===undefined) ? '' : String(out[c]).trim(); });\n"
     " if((out[COL.zone]||'').toUpperCase()==='SUKKUR') out[COL.zone]='Sukkur';\n"
+    " if(CAT_NORMALIZE_JS[out[COL.assetCat]]){ out[COL.assetCat]=CAT_NORMALIZE_JS[out[COL.assetCat]]; window.__dqCat=(window.__dqCat||0)+1; }\n"
     " out[COL.itemCat] = out[COL.assetClass] || '';\n"
     " return out;")
 sub(r"\[COL\.zone, COL\.region, COL\.itemCat, COL\.assetCat, COL\.assetName, COL\.status, COL\.bidder, COL\.ddNo\]\s*\n\s*\.forEach\(c => \{ out\[c\] = \(out\[c\]===null\|\|out\[c\]===undefined\) \? '' : String\(out\[c\]\)\.trim\(\); \}\);\s*\n\s*return out;",
     lambda m: _cleanrow_repl, label="cleanRow normalization")
+
+# reset the category-normalization DQ counter before each upload rebuild (cleanRow re-counts)
+sub(r"RAW = rows\.map\(cleanRow\)\.filter",
+    lambda m: "window.__dqCat = 0;\n RAW = rows.map(cleanRow).filter", label="reset dq counter")
 
 # manual-upload status: append a PKT sync timestamp
 sub(r"setStatus\(`\$\{RAW\.length\.toLocaleString\(\)\} records loaded from \$\{filename\}\$\{sheetSuffix\}`, true\);",
@@ -468,9 +615,9 @@ HOWTO = ('\n <div class="mt-4 pt-4 text-[11px] text-gray-400 leading-relaxed bor
 sub(r'(<div id="scopeInfo">Upload a CSV to begin\. Slicers cascade and apply to every tab\.</div>\s*\n\s*</div>)',
     lambda m: m.group(1) + HOWTO, label="how-to-refresh note")
 
-# 8) render calls: add tab0 + tab4
+# 8) render calls: add tab0 + tab4 … tab7 (Database)
 sub(r"renderTab3\(data\);",
-    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);\n  renderZoneScorecard(data);",
+    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);\n  renderTab7(data);",
     label="renderAll calls")
 
 # 8b) Brand-align the Chart.js palette (lime accent, matching tab0/tab4)
@@ -479,10 +626,6 @@ sub(r"green:'#00A376', greenDark:'#007F5C', greenTint:'#7DCBB3',",
 sub(r"palette:\['#00A376','#2C3136','#D97706','#2563EB','#9333EA','#0891B2','#DC2626','#65A30D'\]",
     "palette:['#8FB400','#2C303B','#D97706','#0891B2','#9333EA','#2563EB','#DC2626','#00A376']",
     label="BT palette lime-first")
-
-# 8c) Fix stale caption ("five" asset categories -> nine are in scope)
-sub(r"Distribution across the five asset categories in scope",
-    "Distribution across the asset categories in scope", label="caption fix")
 
 # 9) cap big detail tables to 500 rows (perf with 11.7k rows)
 sub(r"\$\{rows\.map\(r => `\s*\n\s*<tr>\s*\n\s*<td>\$\{escapeHtml\(r\.zone\)\}</td>\s*\n\s*<td>\$\{escapeHtml\(r\.region\)\}</td>\s*\n\s*<td>\$\{escapeHtml\(r\.assetCat\)\}",
@@ -762,25 +905,272 @@ function renderUpdates(){
     `</tbody></table>` : '<div class="empty-state">No status records.</div>';
 }
 
-/* ---------- Initial empty state ---------- */"""
-sub(r"/\* ---------- Initial empty state ---------- \*/", NEW_JS, label="inject tab0/tab4 js")
+/* ==================== DERIVED DISPOSAL-STATUS MODEL ==================== */
+/* One fixed colour per status across every chart + the Database pills. */
+const STATUS_ORDER = ['Lifted','Partially Lifted','Lifting Pending','Auction in Process','Not Auctioned','Consignment'];
+const STATUS_COLORS = {
+  'Lifted':'#8FB400', 'Partially Lifted':'#C9DE7A', 'Lifting Pending':'#D97706',
+  'Auction in Process':'#2563EB', 'Not Auctioned':'#6B7280', 'Consignment':'#9333EA'
+};
+const MEASURE_COLORS = { total:'#2C303B', auction:'#0891B2', lifted:'#8FB400' };
+const CAT_NORMALIZE_JS = {"Spices":"OB - Spices"};
+function _s(v){ return (v==null?'':String(v)).trim().toLowerCase(); }
+/* Precedence: Consignment → Auction-in-Process → Not-Auctioned → (Auctioned:) Lifted /
+   Partially Lifted / Lifting Pending. The DERIVED status governs — the Lifting-Status text
+   column is never trusted on its own (it contradicts ~itself on some auctioned rows). */
+function deriveStatus(r){
+  const st=_s(r[COL.status]), lst=_s(r[COL.liftingStatus]);
+  const atot=+(r[COL.auctQtyTotal]||0), lifted=+(r[COL.liftedQty]||0);
+  if(st==='consignment' || lst==='consignment') return 'Consignment';
+  if(/process|progress|advertis|await/.test(st)) return 'Auction in Process';
+  if(st!=='auctioned') return 'Not Auctioned';
+  if(atot<=0) return lifted>0 ? 'Lifted' : 'Lifting Pending';   // fallback for atot=0 rows
+  if(lifted>=atot) return 'Lifted';
+  if(lifted>0) return 'Partially Lifted';
+  return 'Lifting Pending';
+}
+function isAuctionedStatus(s){ return s==='Lifted'||s==='Partially Lifted'||s==='Lifting Pending'; }
+/* Robust date parse for baked ISO strings, Date objects, Excel serials and D-M-Y text. */
+function parseDateJS(v){
+  if(v==null||v==='') return null;
+  if(v instanceof Date) return isNaN(v.getTime())?null:v;
+  if(typeof v==='number'){ if(v>20000&&v<80000){ const d=new Date(Date.UTC(1899,11,30)+v*86400000); return isNaN(d.getTime())?null:d; } return null; }
+  const s=String(v).trim(); if(!s) return null;
+  if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return null;                 // time-only junk → missing
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);                      // ISO
+  if(m){ const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d.getTime())?null:d; }
+  m=s.match(/^(\d{1,2})[\-\/.](\d{1,2})[\-\/.](\d{2,4})/);            // D-M-Y / D/M/Y
+  if(m){ let y=+m[3]; if(y<100) y+=2000; const d=new Date(y,+m[2]-1,+m[1]); return isNaN(d.getTime())?null:d; }
+  const d=new Date(s); return isNaN(d.getTime())?null:d;
+}
+function daysSince(d){ return Math.floor((Date.now()-d.getTime())/86400000); }
 
-# 10b) Project Updates & News panel on the Overall tab (tab1)
-PANEL = ('\n          <div class="chart-card mt-4">\n'
-         '            <div class="chart-title">Zone Scorecard &mdash; Milestone Progress by Zone</div>\n'
-         '            <div class="chart-sub">Each zone&rsquo;s completion across the four stages (respects the global slicers). The tinted bar scales with %; <span class="dq-flag">&#9650;</span> marks &gt;100% source anomalies.</div>\n'
-         '            <div id="zoneScorecard" class="data-table-wrap" style="max-height:none;"></div>\n'
-         '          </div>\n'
-         '          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">\n'
-         '            <div class="chart-card"><div class="chart-title">Latest News</div>'
-         '<div class="chart-sub">Dated updates from the Project Updates workbook</div>'
-         '<div id="newsList"></div></div>\n'
-         '            <div class="chart-card"><div class="chart-title">Zone Leads &amp; Field Status</div>'
-         '<div class="chart-sub">Assigned leads and status by zone / region</div>'
-         '<div id="statusList" class="data-table-wrap" style="max-height:360px;"></div></div>\n'
-         '          </div>\n        ')
-sub(r'(<canvas id="chartByCat"></canvas></div>\s*</div>)\s*</section>',
-    lambda m: m.group(1) + PANEL + '</section>', flags=re.DOTALL, label="updates panel")
+/* ==================== TAB 1 — OVERALL PROJECT STATUS (narrative) ==================== */
+let T1_DATA=[]; let ZONE_SORT='desc'; let REGION_SORT='zone';
+function renderTab1(data){
+  T1_DATA=data;
+  data.forEach(r=>{ r.__st=deriveStatus(r); });
+  renderT1KPIs(data); renderComposition(data); renderLiftPie(data);
+  renderZoneCmp(data); renderRegionCmp(data); renderAging(data); renderDQNote(data);
+  wireT1Toggles();
+}
+function renderT1KPIs(data){
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  const q=r=>+(r[COL.cQty]||0);
+  const totalBase=sum(data,q);
+  const cons=data.filter(r=>r.__st==='Consignment'), consQty=sum(cons,q);
+  const proc=data.filter(r=>r.__st==='Auction in Process'), procQty=sum(proc,q);
+  const auct=data.filter(r=>isAuctionedStatus(r.__st));
+  const auctQty=sum(auct,r=>+(r[COL.auctQtyTotal]||0));
+  const liftedQty=sum(auct,r=>+(r[COL.liftedQty]||0));
+  const pendQty=sum(auct,r=>Math.max(0,(+(r[COL.auctQtyTotal]||0))-(+(r[COL.liftedQty]||0))));
+  set('k1Total',fmtNum(totalBase)); set('k1TotalSub',`${fmtNum(data.length)} counted asset lines`);
+  set('k1Proc', procQty>0?fmtNum(procQty):'—'); set('k1ProcSub', proc.length?`${fmtNum(proc.length)} lots advertised`:'Advertised, not concluded');
+  set('k1Auct',fmtNum(auctQty)); set('k1AuctSub', totalBase>0?`${(auctQty/totalBase*100).toFixed(1)}% of verified base`:'—');
+  set('k1Lift',fmtNum(liftedQty)); set('k1LiftSub', auctQty>0?`${(liftedQty/auctQty*100).toFixed(1)}% of auctioned`:'—');
+  set('k1Pend',fmtNum(pendQty)); set('k1PendSub', auctQty>0?`${(pendQty/auctQty*100).toFixed(1)}% of auctioned`:'—');
+  set('k1Cons', consQty>0?fmtNum(consQty):'—'); set('k1ConsSub', cons.length?`${fmtNum(cons.length)} lots on consignment`:'Excluded from rates');
+}
+function renderComposition(data){
+  destroyChart('chartComposition');
+  const leg=document.getElementById('compLegend');
+  const q=r=>+(r[COL.cQty]||0); const by={}; STATUS_ORDER.forEach(s=>by[s]=0);
+  data.forEach(r=>{ by[r.__st]=(by[r.__st]||0)+q(r); });
+  const labels=STATUS_ORDER.filter(s=>by[s]>0), vals=labels.map(s=>by[s]);
+  const tot=vals.reduce((a,b)=>a+b,0);
+  if(!data.length||tot<=0){ noData('chartComposition'); if(leg) leg.innerHTML=''; return; }
+  CHARTS.chartComposition=new Chart(document.getElementById('chartComposition'),{type:'doughnut',
+    data:{labels,datasets:[{data:vals,backgroundColor:labels.map(s=>STATUS_COLORS[s]),borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmtNum(ctx.parsed)} (${(ctx.parsed/tot*100).toFixed(1)}%)`}}}}});
+  if(leg) leg.innerHTML=labels.map((s,i)=>`<div class="lg-row"><span class="lg-sw" style="background:${STATUS_COLORS[s]}"></span><span class="lg-name">${s}</span><span class="lg-val">${fmtNum(vals[i])}</span><span class="lg-pct">${(vals[i]/tot*100).toFixed(1)}%</span></div>`).join('');
+}
+function renderLiftPie(data){
+  destroyChart('chartLiftPie');
+  const auct=data.filter(r=>isAuctionedStatus(r.__st));
+  const auctQty=sum(auct,r=>+(r[COL.auctQtyTotal]||0));
+  const lifted=sum(auct,r=>+(r[COL.liftedQty]||0));
+  const pend=Math.max(0,auctQty-lifted);
+  if(!auct.length||auctQty<=0){ noData('chartLiftPie'); return; }
+  const vals=[lifted,pend];
+  CHARTS.chartLiftPie=new Chart(document.getElementById('chartLiftPie'),{type:'doughnut',
+    data:{labels:['Lifted','Still to lift'],datasets:[{data:vals,backgroundColor:['#8FB400','#D97706'],borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{title:{display:true,text:'Auctioned base: '+fmtNum(auctQty)+' units',color:'#6B7280',font:{size:12,weight:'600'}},
+        legend:{position:'bottom',labels:{boxWidth:12,padding:12}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmtNum(ctx.parsed)} (${(ctx.parsed/auctQty*100).toFixed(1)}% of auctioned)`}}}}});
+}
+function renderZoneCmp(data){
+  destroyChart('chartZoneCmp');
+  if(!data.length){ noData('chartZoneCmp'); return; }
+  const g=groupBy(data,COL.zone); let zones=Object.keys(g);
+  const tot=z=>sum(g[z],r=>+(r[COL.cQty]||0));
+  zones.sort((a,b)=> ZONE_SORT==='asc'? tot(a)-tot(b): tot(b)-tot(a));
+  CHARTS.chartZoneCmp=new Chart(document.getElementById('chartZoneCmp'),{type:'bar',
+    data:{labels:zones,datasets:[
+      {label:'Verified base',data:zones.map(z=>sum(g[z],r=>+(r[COL.cQty]||0))),backgroundColor:MEASURE_COLORS.total,borderRadius:4},
+      {label:'Auctioned',data:zones.map(z=>sum(g[z],r=>+(r[COL.auctQtyTotal]||0))),backgroundColor:MEASURE_COLORS.auction,borderRadius:4},
+      {label:'Lifted',data:zones.map(z=>sum(g[z],r=>+(r[COL.liftedQty]||0))),backgroundColor:MEASURE_COLORS.lifted,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtNum(ctx.parsed.y)}`}}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#F3F4F6'}}}}});
+}
+function renderRegionCmp(data){
+  destroyChart('chartRegionCmp');
+  if(!data.length){ noData('chartRegionCmp'); return; }
+  const g=groupBy(data,COL.region); let regions=Object.keys(g);
+  const tot=x=>sum(g[x],r=>+(r[COL.cQty]||0));
+  const zoneOf={}; regions.forEach(rg=>{ zoneOf[rg]=g[rg][0][COL.zone]||''; });
+  if(REGION_SORT==='zone'){
+    const zorder=(window.DASH_META&&DASH_META.zones)||[...new Set(data.map(r=>r[COL.zone]))];
+    const zi=z=>{const i=zorder.indexOf(z); return i<0?999:i;};
+    regions.sort((a,b)=> (zi(zoneOf[a])-zi(zoneOf[b])) || (tot(b)-tot(a)));
+  } else regions.sort((a,b)=> REGION_SORT==='asc'? tot(a)-tot(b): tot(b)-tot(a));
+  const labels=regions.map(rg=>`${zoneOf[rg]} · ${rg}`);
+  CHARTS.chartRegionCmp=new Chart(document.getElementById('chartRegionCmp'),{type:'bar',
+    data:{labels,datasets:[
+      {label:'Verified base',data:regions.map(x=>sum(g[x],r=>+(r[COL.cQty]||0))),backgroundColor:MEASURE_COLORS.total,borderRadius:3},
+      {label:'Auctioned',data:regions.map(x=>sum(g[x],r=>+(r[COL.auctQtyTotal]||0))),backgroundColor:MEASURE_COLORS.auction,borderRadius:3},
+      {label:'Lifted',data:regions.map(x=>sum(g[x],r=>+(r[COL.liftedQty]||0))),backgroundColor:MEASURE_COLORS.lifted,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtNum(ctx.parsed.x)}`}}},
+      scales:{x:{beginAtZero:true,grid:{color:'#F3F4F6'}},y:{grid:{display:false},ticks:{font:{size:10},autoSkip:false}}}}});
+}
+function renderAging(data){
+  destroyChart('chartAging');
+  const pqOf=r=>Math.max(0,(+(r[COL.auctQtyTotal]||0))-(+(r[COL.liftedQty]||0)));
+  const rows=data.filter(r=>(r.__st==='Lifting Pending'||r.__st==='Partially Lifted') && pqOf(r)>0);
+  const buckets=[{k:'0–30 days',lo:0,hi:30},{k:'31–60 days',lo:31,hi:60},{k:'61–90 days',lo:61,hi:90},{k:'90+ days',lo:91,hi:1e12}];
+  buckets.forEach(b=>{b.qty=0;b.val=0;b.n=0;});
+  let missing=0, missQty=0, future=0; const pend=[];
+  rows.forEach(r=>{
+    const pq=Math.max(0,(+(r[COL.auctQtyTotal]||0))-(+(r[COL.liftedQty]||0)));
+    const val=+(r[COL.auctValueTotal]||0);
+    const d=parseDateJS(r[COL.auctionDate]);
+    if(!d){ missing++; missQty+=pq; return; }
+    const days=daysSince(d);
+    if(days<0){ future++; return; }
+    const b=buckets.find(b=>days>=b.lo&&days<=b.hi); if(!b) return;
+    b.qty+=pq; b.val+=val; b.n++;
+    pend.push({zone:r[COL.zone],region:r[COL.region],cat:r[COL.assetCat],date:d,days,pq,val});
+  });
+  const bcol=['#FCD34D','#F59E0B','#D97706','#B45309'];
+  if(rows.length && buckets.some(b=>b.qty>0)){
+    CHARTS.chartAging=new Chart(document.getElementById('chartAging'),{type:'bar',
+      data:{labels:buckets.map(b=>b.k),datasets:[{label:'Pending qty',data:buckets.map(b=>b.qty),backgroundColor:buckets.map((b,i)=>bcol[i]),borderRadius:5,maxBarThickness:70}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const b=buckets[ctx.dataIndex]; return [`Pending qty: ${fmtNum(b.qty)}`,`Auction value: Rs ${fmtNum(b.val)}`,`${fmtNum(b.n)} lots`];}}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#F3F4F6'}}}}});
+  } else noData('chartAging');
+  const tw=document.getElementById('agingTableWrap');
+  if(tw) tw.innerHTML=`<table class="data-table"><thead><tr><th>Age bucket</th><th style="text-align:right">Lots</th><th style="text-align:right">Pending Qty</th><th style="text-align:right">Auction Value (Rs.)</th></tr></thead><tbody>`+
+    buckets.map(b=>`<tr><td>${b.k}</td><td style="text-align:right">${fmtNum(b.n)}</td><td style="text-align:right">${fmtNum(b.qty)}</td><td style="text-align:right">${fmtNum(b.val)}</td></tr>`).join('')+`</tbody></table>`;
+  const sub=document.getElementById('agingSub');
+  if(sub) sub.innerHTML=`Days since auction date for auctioned-but-not-fully-lifted lots, as of ${new Date().toISOString().slice(0,10)}. `+
+    `<b>${fmtNum(missing)}</b> lot(s) (${fmtNum(missQty)} pending qty) have a missing / unparseable auction date`+(future?`; <b>${fmtNum(future)}</b> lot(s) carry a future-dated auction and are excluded from aging`:'')+`.`;
+  const top=pend.sort((a,b)=>b.days-a.days).slice(0,10);
+  const topw=document.getElementById('agingTopWrap');
+  if(topw) topw.innerHTML= top.length===0 ? '<div class="empty-state">No auctioned lots are pending lifting under the current filters. ✓</div>' :
+    `<table class="data-table"><thead><tr><th>Zone</th><th>Region</th><th>Asset Category</th><th>Auction Date</th><th style="text-align:right">Days Pending</th><th style="text-align:right">Pending Qty</th><th style="text-align:right">Auction Value (Rs.)</th></tr></thead><tbody>`+
+    top.map(t=>`<tr><td>${escapeHtml(t.zone)}</td><td>${escapeHtml(t.region)}</td><td>${escapeHtml(t.cat)}</td><td>${t.date.toISOString().slice(0,10)}</td><td style="text-align:right;font-weight:700">${fmtNum(t.days)}</td><td style="text-align:right">${fmtNum(t.pq)}</td><td style="text-align:right">${fmtNum(t.val)}</td></tr>`).join('')+`</tbody></table>`;
+}
+function renderDQNote(data){
+  const el=document.getElementById('dqNote'); if(!el) return;
+  const catNorm=(window.__dqCat!==undefined?window.__dqCat:((window.DASH_META&&DASH_META.dq&&DASH_META.dq.categoriesNormalized)||0));
+  let contra=0, dmiss=0, auctN=0;
+  data.forEach(r=>{
+    if(_s(r[COL.status])==='auctioned' && _s(r[COL.liftingStatus])==='not auctioned') contra++;
+    if(isAuctionedStatus(deriveStatus(r))){ auctN++; if(!parseDateJS(r[COL.auctionDate])) dmiss++; }
+  });
+  el.innerHTML=`<b>Data-quality footnotes</b> &mdash; `+
+    `Category labels normalized: <b>${fmtNum(catNorm)}</b> (Spices → OB - Spices). `+
+    `Status contradictions resolved (Lifting-Status column said &ldquo;Not Auctioned&rdquo; on an auctioned lot; the derived status governs): <b>${fmtNum(contra)}</b>. `+
+    `Auction dates missing / unparseable on auctioned lots: <b>${fmtNum(dmiss)}</b> of ${fmtNum(auctN)}. `+
+    `All figures are shown exactly as recorded; anomalies are not clamped.`;
+}
+function wireT1Toggles(){
+  const wire=(id,setter,rerender)=>{ const box=document.getElementById(id); if(!box||box.__wired) return; box.__wired=true;
+    box.querySelectorAll('.sort-btn').forEach(b=>b.addEventListener('click',()=>{ setter(b.dataset.dir);
+      box.querySelectorAll('.sort-btn').forEach(x=>x.classList.toggle('active',x===b)); rerender(T1_DATA); })); };
+  wire('zoneSort', v=>ZONE_SORT=v, renderZoneCmp);
+  wire('regionSort', v=>REGION_SORT=v, renderRegionCmp);
+}
+
+/* ==================== TAB 7 — DATABASE (sortable / searchable register) ==================== */
+let DB_SORT={key:'zone',dir:'asc'};
+const DB_COLS=[
+  {key:'zone',label:'Zone',get:r=>r[COL.zone]},
+  {key:'region',label:'Region',get:r=>r[COL.region]},
+  {key:'class',label:'Assets Class',get:r=>r[COL.assetClass]},
+  {key:'cat',label:'Assets Category',get:r=>r[COL.assetCat]},
+  {key:'asset',label:'Asset Name',get:r=>r[COL.assetName]},
+  {key:'cQty',label:'Verified Qty',get:r=>+(r[COL.cQty]||0),num:true},
+  {key:'status',label:'Status',get:r=>deriveStatus(r)},
+  {key:'adate',label:'Auction Date',get:r=>(r[COL.auctionDate]||'').toString().slice(0,10)},
+  {key:'aQty',label:'Auction Qty',get:r=>+(r[COL.auctQtyTotal]||0),num:true},
+  {key:'lQty',label:'Lifted Qty',get:r=>+(r[COL.liftedQty]||0),num:true},
+  {key:'bQty',label:'Balance Qty',get:r=>+(r[COL.balanceQty]||0),num:true},
+  {key:'val',label:'Auction Value (Rs.)',get:r=>+(r[COL.auctValueTotal]||0),num:true},
+];
+function dbSort(key){
+  const col=DB_COLS.find(c=>c.key===key)||DB_COLS[0];
+  if(DB_SORT.key===key) DB_SORT.dir = DB_SORT.dir==='asc'?'desc':'asc';
+  else DB_SORT={key, dir: col.num?'desc':'asc'};
+  renderTab7(getFiltered());
+}
+function fillDbFilters(){
+  const rows=(typeof RAW!=='undefined'&&RAW)||[];
+  const fill=(id,vals)=>{ const el=document.getElementById(id); if(!el||el.options.length>1) return;
+    [...new Set(vals.filter(x=>x!==''&&x!=null))].sort((a,b)=>String(a).localeCompare(String(b)))
+      .forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); }); };
+  fill('dbFZone',rows.map(r=>r[COL.zone])); fill('dbFRegion',rows.map(r=>r[COL.region]));
+  fill('dbFClass',rows.map(r=>r[COL.assetClass])); fill('dbFCat',rows.map(r=>r[COL.assetCat]));
+  fill('dbFStatus',rows.map(r=>deriveStatus(r)));
+}
+function renderTab7(data){
+  const wrap=document.getElementById('dbTableWrap'); if(!wrap) return;
+  fillDbFilters();
+  const val=id=>{const e=document.getElementById(id); return e?e.value:'';};
+  const q=(val('dbSearch')||'').trim().toLowerCase();
+  const fz=val('dbFZone'),fr=val('dbFRegion'),fc=val('dbFClass'),fk=val('dbFCat'),fs=val('dbFStatus');
+  let rows=data.filter(r=>{
+    if(fz&&r[COL.zone]!==fz) return false;
+    if(fr&&r[COL.region]!==fr) return false;
+    if(fc&&r[COL.assetClass]!==fc) return false;
+    if(fk&&r[COL.assetCat]!==fk) return false;
+    const st=deriveStatus(r); if(fs&&st!==fs) return false;
+    if(q){ const hay=[r[COL.zone],r[COL.region],r[COL.assetClass],r[COL.assetCat],r[COL.assetName],st,r[COL.bidder]].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  const col=DB_COLS.find(c=>c.key===DB_SORT.key)||DB_COLS[0];
+  rows.sort((a,b)=>{ let x=col.get(a),y=col.get(b);
+    if(col.num){ x=+x||0; y=+y||0; return DB_SORT.dir==='asc'?x-y:y-x; }
+    x=String(x).toLowerCase(); y=String(y).toLowerCase(); return DB_SORT.dir==='asc'?x.localeCompare(y):y.localeCompare(x); });
+  const arw=c=> DB_SORT.key===c.key ? (DB_SORT.dir==='asc'?'▲':'▼') : '↕';
+  const head='<tr>'+DB_COLS.map(c=>`<th class="${DB_SORT.key===c.key?'sorted':''}${c.num?' num':''}" onclick="dbSort('${c.key}')">${c.label}<span class="arw">${arw(c)}</span></th>`).join('')+'</tr>';
+  const shown=rows.slice(0,1000);
+  const body=shown.map(r=>{ const st=deriveStatus(r);
+    return '<tr>'+
+      `<td>${escapeHtml(r[COL.zone])}</td><td>${escapeHtml(r[COL.region])}</td>`+
+      `<td>${escapeHtml(r[COL.assetClass])}</td><td>${escapeHtml(r[COL.assetCat])}</td>`+
+      `<td>${escapeHtml(r[COL.assetName])}</td>`+
+      `<td class="num">${fmtNum(+(r[COL.cQty]||0))}</td>`+
+      `<td><span class="status-pill" style="background:${STATUS_COLORS[st]||'#6B7280'}">${st}</span></td>`+
+      `<td>${escapeHtml((r[COL.auctionDate]||'').toString().slice(0,10))||'—'}</td>`+
+      `<td class="num">${fmtNum(+(r[COL.auctQtyTotal]||0))}</td>`+
+      `<td class="num">${fmtNum(+(r[COL.liftedQty]||0))}</td>`+
+      `<td class="num">${fmtNum(+(r[COL.balanceQty]||0))}</td>`+
+      `<td class="num">${fmtNum(+(r[COL.auctValueTotal]||0))}</td></tr>`;
+  }).join('');
+  wrap.innerHTML= rows.length===0 ? '<div class="empty-state">No records match the current search / filters.</div>'
+    : `<table class="db-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  const cnt=document.getElementById('dbCount');
+  if(cnt) cnt.textContent=`Showing ${fmtNum(shown.length)} of ${fmtNum(rows.length)} filtered rows (${fmtNum(data.length)} in scope after global slicers).`;
+}
+
+/* ---------- Initial empty state ---------- */"""
+sub(r"/\* ---------- Initial empty state ---------- \*/", lambda m: NEW_JS, label="inject tab0/tab4 js")
+
+# 10b) (Zone Scorecard + News panel removed — the Overall tab is now the 7-section
+#      narrative built in step 4b / renderTab1; the old chartByCat anchor no longer exists.)
 
 # 11) bootstrap from embedded JSON (replace the bootEmpty() call)
 BOOT = r"""(function(){
@@ -792,6 +1182,7 @@ BOOT = r"""(function(){
     NUMERIC_COLS.forEach(k=>{ if(typeof o[k] !== 'number') o[k] = Number(o[k]) || 0; });
     o[COL.itemCat] = o[COL.itemCat] || o[COL.assetClass] || '';   // 'Asset Class' slicer
     return o; });
+  window.__dqCat = (meta.meta.dq && meta.meta.dq.categoriesNormalized) || 0;
   hydrateSlicers(); renderAll(); renderUpdates();
   const d = meta.meta.refreshDate || '';
   const sp = document.getElementById('sourcePath');

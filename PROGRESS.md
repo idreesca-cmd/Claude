@@ -3,7 +3,7 @@
 **Client:** Utility Stores Corporation (USC) — FAR Auction / Asset Disposal & Reconciliation
 **Engagement:** Baker Tilly (Mehmood Idrees Qamar) — Third-Party Validation (TPV)
 **Repo/branch:** `idreesca-cmd/Claude` @ `claude/dashboard-files-review-t31098`
-**Last updated:** 2026-07-06
+**Last updated:** 2026-07-13
 
 > This file is the resumable checkpoint. If a session ends, a new session can
 > read this + `/source-data/*` and continue the build without re-deriving anything.
@@ -496,3 +496,49 @@ The client replaced the source with a **fundamentally restructured** `USC_Dashbo
 Re-verified headless (all 7 tabs, 0 console errors) AND end-to-end **Refresh-Data upload of the new
 file** (600 records, correct sheet, Payment matches baked build, groups correct). Still self-contained
 (0 external requests).
+
+## 18. Overall Project Status redesigned as a narrative + new Database tab (session 12)
+
+Rebuilt the **Overall Project Status** tab (tab1) so it reads top-to-bottom as a data story —
+*verified base → advertised → auctioned → lifted → stuck (and for how long)* — and added a dedicated
+**Database** tab (tab7). Same Baker Tilly palette / Tailwind / Chart.js stack; modify-not-rebuild.
+Now **8 tabs**. Built against the latest source (`scratchpad/USC_source_latest.xlsx`, 979 rows, 4 zones,
+22 regions — Sukkur/Karachi/Abbottabad/Peshawar).
+
+**Derived disposal-status model** (`deriveStatus`, one fixed colour per status everywhere):
+precedence Consignment → Auction-in-Process → Not-Auctioned → (Auctioned:) Lifted / Partially Lifted /
+Lifting Pending. The **derived status governs** — the Lifting-Status *text* column is never trusted on
+its own. Fallback for the 3 `Auction Qty Total = 0` auctioned rows: lifted>0 → Lifted, else Lifting
+Pending. Colours: Lifted `#8FB400`, Partially `#C9DE7A`, Pending `#D97706`, In-Process `#2563EB`,
+Not-Auctioned `#6B7280`, Consignment `#9333EA`. "Auction in Process" is built into the model now and
+shows an em-dash until the source carries that status.
+
+**tab1 — 7-section narrative:**
+1. **Headline KPI strip** (6): Verified Base 666,530 → Auction-in-Process (—) → Auctioned 502,443
+   (75.4% of base) → Lifted 462,425 (92.0% of auctioned) → Lifting Pending 44,322 (8.8%) →
+   Consignment (— qty, 15 lots; excluded from rates). Each carries a plain-English caption.
+2. **Status composition** doughnut by verified qty + legend (%+absolute per derived status). Consignment
+   has 0 counted qty so it's absent from the donut but shown in the KPI/DB.
+3. **Lifted-vs-auctioned** doughnut (auctioned only, Consignment excluded; centre subtitle = auctioned base).
+4. **Zone** grouped bar (verified / auctioned / lifted) with Total ↓/↑ sort toggle.
+5. **Region** grouped bar (same 3 measures), default parent-zone sequence with zone-prefixed labels;
+   By-zone / Total ↓ / Total ↑ toggles.
+6. **Lifting aging** — for auctioned-but-not-fully-lifted lots with qty outstanding, days since auction
+   date as of today; buckets 0–30 / 31–60 / 61–90 / 90+ (pending qty + auction value + lot count),
+   plus a **Top-10 longest-pending** table. Missing/unparseable and future-dated auction dates are
+   counted and flagged separately (robust `parseDateJS`: ISO, Date, Excel serial, D-M-Y, time-only junk→missing).
+7. **DQ footnote:** category labels normalized (159, Spices→OB-Spices) · status contradictions resolved
+   (0 here; derived governs) · auction dates missing/unparseable on auctioned lots (119 of 511).
+
+**tab7 — Database:** full asset-line register, sticky header, **click-any-column sort** (asc/desc),
+search box + Zone/Region/Assets-Class/Assets-Category/Status drop-downs, colour-coded derived-status
+pills, thousand separators, right-aligned numerics, capped at 1,000 rendered rows with a live count.
+Respects the global slicers.
+
+Removed the old Zone-Scorecard/News panel injection (its `chartByCat` anchor is gone). Category
+normalization (Spices→OB-Spices) now runs on **both** paths — baked (Python `CAT_NORMALIZE`) and upload
+(`cleanRow` + `window.__dqCat` counter, reset per upload).
+
+Verified headless: **all 8 tabs, 0 console/page errors**; interaction test passed (Consignment
+filter → 15 rows, "Vehicles" search → 38, Verified-Qty sort desc top 27,198, zone/region toggles fire
+clean). Still fully self-contained (0 external requests). Published to `docs/index.html`.

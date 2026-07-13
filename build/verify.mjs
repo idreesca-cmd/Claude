@@ -23,14 +23,19 @@ try {
     chartjs: typeof window.Chart !== 'undefined',
     tailwind: !!document.querySelector('script[src*="tailwind"]'),
     status: (document.getElementById('statusText')||{}).textContent,
-    kpi1Records: (document.getElementById('kpi1Records')||{}).textContent,
+    k1Total: (document.getElementById('k1Total')||{}).textContent,
+    k1Auct: (document.getElementById('k1Auct')||{}).textContent,
+    k1Lift: (document.getElementById('k1Lift')||{}).textContent,
+    compLegendRows: document.querySelectorAll('#compLegend .lg-row').length,
     kpi4Pay: (document.getElementById('kpi4Pay')||{}).textContent,
     msRings: document.querySelectorAll('#milestoneMatrix .ring').length,
     msCols: document.querySelectorAll('#milestoneMatrix thead th').length,
+    dbRows: document.querySelectorAll('#dbTableWrap tbody tr').length,
+    dqNote: !!(document.getElementById('dqNote')||{}).textContent,
   }));
   console.log('DIAG', JSON.stringify(diag, null, 2));
 
-  const tabs = [['tab0','Category Milestone'],['tab1','Overall'],['tab2','Quantity'],['tab3','Auction'],['tab4','Payment'],['tab5','Payments-DD'],['tab6','Anomalies']];
+  const tabs = [['tab0','Category Milestone'],['tab1','Overall'],['tab2','Quantity'],['tab3','Auction'],['tab4','Payment'],['tab5','Payments-DD'],['tab6','Anomalies'],['tab7','Database']];
   for (const [t,label] of tabs) {
     await page.click(`.tab-btn[data-tab="${t}"]`);
     await page.waitForTimeout(900);
