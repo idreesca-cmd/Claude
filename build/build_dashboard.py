@@ -84,15 +84,18 @@ def C(row, letter): return row[ci(letter) - 1]
 # dashboard key -> source column letter (Row-2 names). Order here == baked array order.
 COLMAP = [
     ("zone","A"), ("region","B"), ("assetClass","C"), ("assetCat","D"), ("assetName","E"),
+    ("assetNamePasted","F"),
     ("uom","G"), ("aQty","I"), ("bQty","J"), ("cQty","K"), ("dBA","L"), ("eCB","M"),
     ("reservePriceTotal","R"), ("status","S"), ("auctionDate","T"),
     ("auctQtyUsable","U"), ("auctQtyScrap","V"), ("auctQtyTotal","W"), ("auctQtyTotalKg","X"),
-    ("diffAuctCount","Y"), ("bidder","Z"), ("auctValueTotal","AE"), ("liftingStatus","AF"),
-    ("payDate","AG"), ("payRs","AH"), ("ddNo","AI"), ("liftedQty","AM"), ("liftedKg","AQ"),
+    ("diffAuctCount","Y"), ("bidder","Z"),
+    ("apUsable","AA"), ("apScrap","AB"), ("auctValueTotal","AE"), ("liftingStatus","AF"),
+    ("payDate","AG"), ("payRs","AH"), ("ddNo","AI"),
+    ("liftedQtyUsable","AK"), ("liftedQtyScrap","AL"), ("liftedQty","AM"), ("liftedKg","AQ"),
     ("qtyDiscrepancy","AR"), ("kgsDiscrepancy","AS"), ("balanceQty","AT"), ("balanceKg","AU"),
     ("liftDate","AJ"),
 ]
-TEXT_KEYS = {"zone","region","assetClass","assetCat","assetName","uom","status",
+TEXT_KEYS = {"zone","region","assetClass","assetCat","assetName","assetNamePasted","uom","status",
              "liftingStatus","bidder","ddNo"}
 DATE_KEYS = {"auctionDate","payDate","liftDate"}
 ORDER = [k for k, _ in COLMAP] + ["itemCat"]   # itemCat (slicer) is derived = assetClass
@@ -316,8 +319,64 @@ TAB1_CSS = """
  .db-table tbody tr:nth-child(even){background:#FAFBFC;}
  .db-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
  .db-count{font-size:11.5px;color:var(--bt-muted);margin-top:8px;}
+ /* Pending-Lifting Aging Explorer (tree-table) */
+ .agx-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;min-width:820px;}
+ .agx-table thead th{position:sticky;top:0;z-index:2;background:var(--bt-charcoal);color:#fff;font-weight:600;padding:8px 10px;white-space:nowrap;user-select:none;text-align:left;}
+ .agx-table thead th.sortable{cursor:pointer;}
+ .agx-table thead th.num{text-align:right;}
+ .agx-table thead th .arw{opacity:.45;font-size:10px;margin-left:3px;}
+ .agx-table thead th.sorted{background:#1b1f26;} .agx-table thead th.sorted .arw{opacity:1;}
+ .agx-table td{padding:6px 10px;border-bottom:1px solid var(--bt-border);white-space:nowrap;}
+ .agx-table td.num{text-align:right;font-variant-numeric:tabular-nums;color:#374151;}
+ .agx-row{cursor:pointer;} .agx-row:hover{background:#F3F4F6;}
+ .agx-leaf td{color:#4B5563;background:#FCFDFE;}
+ .agx-name{display:flex;align-items:center;gap:6px;}
+ .agx-chev{display:inline-block;width:11px;color:var(--bt-muted);font-size:10px;flex:none;}
+ .agx-chev.open{transform:rotate(90deg);}
+ .agx-days{font-weight:700;color:#fff;padding:1px 8px;border-radius:999px;display:inline-block;min-width:38px;text-align:center;font-variant-numeric:tabular-nums;}
+ .agx-nodate{background:#9CA3AF;color:#fff;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:700;}
+ .agx-flag{color:var(--bt-amber);font-weight:700;cursor:help;margin-left:4px;}
+ .agx-top10{margin-top:14px;border-top:1px solid var(--bt-border);padding-top:10px;}
+ .agx-top10 table{border-collapse:collapse;width:100%;font-size:11.5px;margin-top:6px;}
+ .agx-top10 th{text-align:left;color:var(--bt-muted);font-weight:600;padding:4px 8px;border-bottom:1px solid var(--bt-border);}
+ .agx-top10 th.num{text-align:right;}
+ .agx-top10 td{padding:4px 8px;border-bottom:1px solid #F3F4F6;white-space:nowrap;}
+ .agx-top10 td.num{text-align:right;font-variant-numeric:tabular-nums;}
+ /* Zone Progress funnel cards */
+ .zp-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+ .zp-controls select{font-size:12px;padding:6px 10px;border:1px solid var(--bt-border);border-radius:7px;background:#fff;color:var(--bt-slate);}
+ .zp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;}
+ .zone-card{background:#fff;border:1px solid var(--bt-border);border-radius:12px;padding:16px 16px 12px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+ .zone-card.placeholder{background:#F8FAFB;border-style:dashed;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:210px;text-align:center;}
+ .zone-card.placeholder .zp-ph-name{font-size:15px;font-weight:700;color:#9CA3AF;}
+ .zone-card.placeholder .zp-ph-sub{font-size:11.5px;color:#B6BDC6;margin-top:6px;}
+ .zc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px;}
+ .zc-title{font-size:16px;font-weight:700;color:var(--bt-slate);}
+ .zc-meta{font-size:11px;color:var(--bt-muted);margin-top:2px;}
+ .zbadge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;text-transform:uppercase;letter-spacing:.03em;}
+ .zbadge.complete{background:#DCFCE7;color:#166534;} .zbadge.partial{background:#FEF3C7;color:#92400E;} .zbadge.progress{background:#FFEDD5;color:#9A3412;}
+ .zc-strip{display:flex;align-items:stretch;background:var(--bt-mint);border-radius:9px;padding:8px 6px;margin-bottom:12px;}
+ .zc-stage{flex:1;text-align:center;position:relative;padding:2px 4px;}
+ .zc-stage+.zc-stage::before{content:'›';position:absolute;left:-5px;top:50%;transform:translateY(-50%);color:var(--bt-muted);font-size:15px;font-weight:700;}
+ .zc-stage .s-lbl{font-size:9.5px;color:var(--bt-muted);text-transform:uppercase;letter-spacing:.02em;}
+ .zc-stage .s-val{font-size:13px;font-weight:700;color:var(--bt-slate);margin-top:1px;}
+ .zc-stage .s-sub{font-size:9.5px;color:var(--bt-muted);}
+ .zf-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+ .zf-table th{text-align:right;color:var(--bt-muted);font-weight:600;padding:5px 6px;border-bottom:1px solid var(--bt-border);white-space:nowrap;}
+ .zf-table th:first-child{text-align:left;}
+ .zf-table td{padding:5px 6px;border-bottom:1px solid #F3F4F6;vertical-align:middle;}
+ .zf-table td.num{text-align:right;font-variant-numeric:tabular-nums;color:#374151;}
+ .zf-class{cursor:pointer;background:#F8FAFB;font-weight:700;color:var(--bt-slate);}
+ .zf-class:hover{background:#F1F5F9;}
+ .zf-cat td:first-child{padding-left:22px;color:#4B5563;}
+ .zf-chev{display:inline-block;width:10px;font-size:9px;color:var(--bt-muted);}
+ .zbar{height:7px;background:#EDEFF2;border-radius:4px;overflow:hidden;margin-top:3px;}
+ .zbar>span{display:block;height:100%;border-radius:4px;}
+ .zpct{font-weight:700;} .zpct-sub{font-size:9.5px;color:var(--bt-muted);}
+ .zc-foot{font-size:10.5px;color:var(--bt-muted);margin-top:10px;line-height:1.5;}
+ .znr{color:#9CA3AF;font-style:italic;}
 """
-sub(r"</style>", TAB0_CSS + TAB1_CSS + " #sourcePath{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}</style>", label="tab0/tab1 css")
+sub(r"</style>", lambda m: TAB0_CSS + TAB1_CSS + " #sourcePath{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}</style>", label="tab0/tab1 css")
 
 # 3) nav — add tab0, drop pending pill, tab0 active
 sub(r'<button class="tab-btn active" data-tab="tab1">Overall Project Status</button>',
@@ -406,9 +465,21 @@ TAB1_SECTION = """<section id="tab1" class="tab-pane">
             </div>
           </div>
           <div class="chart-card mb-4">
-            <div class="chart-title">Top 10 longest-pending lots</div>
-            <div class="chart-sub">Auctioned lots with the most days elapsed since auction and still not fully lifted.</div>
-            <div id="agingTopWrap" class="data-table-wrap"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+              <div><div class="chart-title">Pending-Lifting Aging Explorer</div>
+                <div class="chart-sub" id="agxSub">Drill into every auctioned-but-not-fully-lifted lot. Each leaf is one lot line &mdash; rows are never merged. Days-pending cells are coloured by age bucket; click a row to expand, or sort any numeric column.</div></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div class="sort-toggle" id="agxMode"><button class="sort-btn active" data-mode="A">Zone &rarr; Region &rarr; Category</button><button class="sort-btn" data-mode="B">Category &rarr; Zone &rarr; Region</button></div>
+                <button class="sort-btn" onclick="agxExpandAll()">Expand all</button>
+                <button class="sort-btn" onclick="agxCollapseAll()">Collapse all</button>
+              </div>
+            </div>
+            <div id="agxTreeWrap" class="data-table-wrap" style="max-height:600px;margin-top:12px;"></div>
+            <div class="agx-top10">
+              <div class="chart-title" style="font-size:14px;margin-top:6px;">Top 10 worst lots</div>
+              <div class="chart-sub">Individual lot lines with the most days pending (zone / region / category shown inline) &mdash; complements the tree above.</div>
+              <div id="agxTop10"></div>
+            </div>
           </div>
           <div class="dq-note" id="dqNote"></div>
         </section>"""
@@ -449,8 +520,9 @@ lit('<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>',
     '<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>\n'
     '        <button class="tab-btn" data-tab="tab5">Payments &amp; DD Detail</button>\n'
     '        <button class="tab-btn" data-tab="tab6">Anomalies</button>\n'
-    '        <button class="tab-btn" data-tab="tab7">Database</button>',
-    label="nav tab5/6/7")
+    '        <button class="tab-btn" data-tab="tab7">Database</button>\n'
+    '        <button class="tab-btn" data-tab="tab8">Zone Progress</button>',
+    label="nav tab5/6/7/8")
 
 # 5d) new sections for Payments + Anomalies (inserted before </main>)
 TAB56 = """        <section id="tab5" class="tab-pane">
@@ -496,14 +568,32 @@ TAB56 = """        <section id="tab5" class="tab-pane">
             <div id="dbCount" class="db-count"></div>
           </div>
         </section>
+        <section id="tab8" class="tab-pane">
+          <div class="chart-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+              <div><div class="chart-title">Zone Progress &mdash; Disposal Funnel by Zone</div>
+                <div class="chart-sub">One card per zone: the Verified &rarr; Auctioned &rarr; Lifted &rarr; Paid funnel, broken down by Assets Class &amp; Category. Percentages measure each stage against the previous. Consignment is excluded from the funnel (counted in each card's footnote). Respects the global Zone / Region slicers.</div></div>
+              <div class="zp-controls">
+                <label class="slicer-label" style="margin:0 4px 0 0;">Sort zones</label>
+                <select id="zpSort" onchange="renderTab8(getFiltered())">
+                  <option value="completion">Overall completion %</option>
+                  <option value="verified">Verified qty</option>
+                  <option value="alpha">Alphabetical</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="zpGrid" class="zp-grid" style="margin-top:16px;"></div>
+          <div class="dq-note" id="zpDqNote" style="margin-top:16px;"></div>
+        </section>
 """
-lit('</main>', TAB56 + '        </main>', label="tab5/6/7 sections")
+lit('</main>', TAB56 + '        </main>', label="tab5/6/7/8 sections")
 
 # 6) NEW SCHEMA — replace COL / NUMERIC_COLS so the manual "Refresh Data" upload (which reads
 #    by header NAME) matches the restructured file's Row-2 headers. The baked-JSON boot path
 #    maps by array index (handled in the Python extraction above).
 NEW_COL = ("const COL = {\n"
-    "  zone:'Zone', region:'Region', assetClass:'Assets Class', itemCat:'Item Category', assetCat:'Assets Category', assetName:'Asset Name (Matched)', uom:'Unit of Measure',\n"
+    "  zone:'Zone', region:'Region', assetClass:'Assets Class', itemCat:'Item Category', assetCat:'Assets Category', assetName:'Asset Name (Matched)', assetNamePasted:'ASSET NAME (Pasted)', uom:'Unit of Measure',\n"
     "  aQty:'A QTY (Odoo)', bQty:'B QTY (Physical Lists)', cQty:'C QTY (Physical Count)', dBA:'D=B-A', eCB:'E=C-B',\n"
     "  status:'Auction Status', liftingStatus:'Lifting Status', auctionDate:'Auction Date',\n"
     "  auctQtyUsable:'Auction Qty Usable', auctQtyScrap:'Auction Qty Scrap', auctQtyTotal:'Auction Qty Total', auctQtyTotalKg:'Auction Qty Total KGs', diffAuctCount:'Diff Qty Auction vs Count',\n"
@@ -511,7 +601,7 @@ NEW_COL = ("const COL = {\n"
     "  rpUsable:'Total Reserve Price Usable', rpScrap:'Total Reserve Price Scrape', reservePriceTotal:'Overall Reserve Price Total',\n"
     "  apUsable:'Auction Price Usable (Per Unit)', apScrap:'Auction Price Scrape (Per Unit)', auctValueTotal:'Total Auction Value',\n"
     "  payDate:'Payment Date', payRs:'Payment Rs.', ddNo:'Payment Demand Draft (DD) No.',\n"
-    "  liftDate:'Lifting Date', liftedQty:'Total Lifted Qty Units', liftedKg:'Total Lifted Qty KGs',\n"
+    "  liftDate:'Lifting Date', liftedQtyUsable:'Lifted Qty Usable', liftedQtyScrap:'Lifted Qty Scrape', liftedQty:'Total Lifted Qty Units', liftedKg:'Total Lifted Qty KGs',\n"
     "  balanceQty:'Balance Qty in Units', balanceKg:'Balance Qty in KGs',\n"
     "  qtyDiscrepancy:'Qty Discrepancy', kgsDiscrepancy:'KGs Discrepancy'\n"
     "}")
@@ -521,7 +611,7 @@ NEW_NUM = ("const NUMERIC_COLS = [\n"
     "  COL.aQty, COL.bQty, COL.cQty, COL.dBA, COL.eCB,\n"
     "  COL.auctQtyUsable, COL.auctQtyScrap, COL.auctQtyTotal, COL.auctQtyTotalKg, COL.diffAuctCount,\n"
     "  COL.rpUsable, COL.rpScrap, COL.reservePriceTotal, COL.apUsable, COL.apScrap, COL.auctValueTotal,\n"
-    "  COL.payRs, COL.liftedQty, COL.liftedKg, COL.balanceQty, COL.balanceKg,\n"
+    "  COL.payRs, COL.liftedQtyUsable, COL.liftedQtyScrap, COL.liftedQty, COL.liftedKg, COL.balanceQty, COL.balanceKg,\n"
     "  COL.qtyDiscrepancy, COL.kgsDiscrepancy\n"
     "]")
 sub(r"const NUMERIC_COLS = \[.*?\]", lambda m: NEW_NUM, flags=re.DOTALL, label="NUMERIC_COLS")
@@ -617,7 +707,7 @@ sub(r'(<div id="scopeInfo">Upload a CSV to begin\. Slicers cascade and apply to 
 
 # 8) render calls: add tab0 + tab4 … tab7 (Database)
 sub(r"renderTab3\(data\);",
-    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);\n  renderTab7(data);",
+    "renderTab3(data);\n  renderTab0(data);\n  renderTab4(data);\n  renderAuctionPricing(data);\n  renderTab5(data);\n  renderTab6(data);\n  renderTab7(data);\n  renderTab8(data);",
     label="renderAll calls")
 
 # 8b) Brand-align the Chart.js palette (lime accent, matching tab0/tab4)
@@ -951,7 +1041,8 @@ function renderTab1(data){
   T1_DATA=data;
   data.forEach(r=>{ r.__st=deriveStatus(r); });
   renderT1KPIs(data); renderComposition(data); renderLiftPie(data);
-  renderZoneCmp(data); renderRegionCmp(data); renderAging(data); renderDQNote(data);
+  renderZoneCmp(data); renderRegionCmp(data); renderAging(data);
+  renderAgingExplorer(data); renderDQNote(data);
   wireT1Toggles();
 }
 function renderT1KPIs(data){
@@ -1036,41 +1127,130 @@ function renderRegionCmp(data){
       plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtNum(ctx.parsed.x)}`}}},
       scales:{x:{beginAtZero:true,grid:{color:'#F3F4F6'}},y:{grid:{display:false},ticks:{font:{size:10},autoSkip:false}}}}});
 }
-function renderAging(data){
-  destroyChart('chartAging');
-  const pqOf=r=>Math.max(0,(+(r[COL.auctQtyTotal]||0))-(+(r[COL.liftedQty]||0)));
-  const rows=data.filter(r=>(r.__st==='Lifting Pending'||r.__st==='Partially Lifted') && pqOf(r)>0);
-  const buckets=[{k:'0–30 days',lo:0,hi:30},{k:'31–60 days',lo:31,hi:60},{k:'61–90 days',lo:61,hi:90},{k:'90+ days',lo:91,hi:1e12}];
-  buckets.forEach(b=>{b.qty=0;b.val=0;b.n=0;});
-  let missing=0, missQty=0, future=0; const pend=[];
-  rows.forEach(r=>{
+/* Shared aging model — one severity ramp reused by the buckets chart, the tree cells and the strip. */
+const AGE_BUCKETS=[{k:'0–30 days',lo:-1e9,hi:30,c:'#16A34A'},{k:'31–60 days',lo:31,hi:60,c:'#F59E0B'},{k:'61–90 days',lo:61,hi:90,c:'#EA580C'},{k:'90+ days',lo:91,hi:1e12,c:'#DC2626'}];
+function ageColor(days){ if(days==null||isNaN(days)) return '#9CA3AF'; for(const b of AGE_BUCKETS){ if(days>=b.lo&&days<=b.hi) return b.c; } return '#DC2626'; }
+/* One leaf per Database row — never merged. Name falls back to ASSET NAME (Pasted), flagged. */
+function pendingLeaves(data){
+  const out=[];
+  data.forEach(r=>{
+    const st=r.__st||deriveStatus(r);
+    if(st!=='Lifting Pending' && st!=='Partially Lifted') return;
     const pq=Math.max(0,(+(r[COL.auctQtyTotal]||0))-(+(r[COL.liftedQty]||0)));
     const val=+(r[COL.auctValueTotal]||0);
     const d=parseDateJS(r[COL.auctionDate]);
-    if(!d){ missing++; missQty+=pq; return; }
-    const days=daysSince(d);
-    if(days<0){ future++; return; }
-    const b=buckets.find(b=>days>=b.lo&&days<=b.hi); if(!b) return;
-    b.qty+=pq; b.val+=val; b.n++;
-    pend.push({zone:r[COL.zone],region:r[COL.region],cat:r[COL.assetCat],date:d,days,pq,val});
+    const nameM=(r[COL.assetName]||'').toString().trim();
+    const nameP=(r[COL.assetNamePasted]||'').toString().trim();
+    out.push({zone:(r[COL.zone]||'(Unspecified)'),region:(r[COL.region]||'(Unspecified)'),cat:(r[COL.assetCat]||'(Unspecified)'),
+      name:nameM||nameP||'(unnamed lot)', fallback:(!nameM&&!!nameP), date:d, days:d?daysSince(d):null, pq, val, st});
   });
-  const bcol=['#FCD34D','#F59E0B','#D97706','#B45309'];
-  if(rows.length && buckets.some(b=>b.qty>0)){
+  return out;
+}
+function renderAging(data){
+  destroyChart('chartAging');
+  const leaves=pendingLeaves(data);
+  const buckets=AGE_BUCKETS.map(b=>({k:b.k,lo:b.lo,hi:b.hi,c:b.c,qty:0,val:0,n:0}));
+  let missing=0, missQty=0;
+  leaves.forEach(l=>{
+    if(l.days==null){ missing++; missQty+=l.pq; return; }
+    const b=buckets.find(b=>l.days>=b.lo&&l.days<=b.hi)||buckets[buckets.length-1];
+    b.qty+=l.pq; b.val+=l.val; b.n++;
+  });
+  if(leaves.length && buckets.some(b=>b.qty>0)){
     CHARTS.chartAging=new Chart(document.getElementById('chartAging'),{type:'bar',
-      data:{labels:buckets.map(b=>b.k),datasets:[{label:'Pending qty',data:buckets.map(b=>b.qty),backgroundColor:buckets.map((b,i)=>bcol[i]),borderRadius:5,maxBarThickness:70}]},
+      data:{labels:buckets.map(b=>b.k),datasets:[{label:'Pending qty',data:buckets.map(b=>b.qty),backgroundColor:buckets.map(b=>b.c),borderRadius:5,maxBarThickness:70}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const b=buckets[ctx.dataIndex]; return [`Pending qty: ${fmtNum(b.qty)}`,`Auction value: Rs ${fmtNum(b.val)}`,`${fmtNum(b.n)} lots`];}}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#F3F4F6'}}}}});
   } else noData('chartAging');
   const tw=document.getElementById('agingTableWrap');
   if(tw) tw.innerHTML=`<table class="data-table"><thead><tr><th>Age bucket</th><th style="text-align:right">Lots</th><th style="text-align:right">Pending Qty</th><th style="text-align:right">Auction Value (Rs.)</th></tr></thead><tbody>`+
-    buckets.map(b=>`<tr><td>${b.k}</td><td style="text-align:right">${fmtNum(b.n)}</td><td style="text-align:right">${fmtNum(b.qty)}</td><td style="text-align:right">${fmtNum(b.val)}</td></tr>`).join('')+`</tbody></table>`;
+    buckets.map(b=>`<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${b.c};margin-right:6px;vertical-align:middle"></span>${b.k}</td><td style="text-align:right">${fmtNum(b.n)}</td><td style="text-align:right">${fmtNum(b.qty)}</td><td style="text-align:right">${fmtNum(b.val)}</td></tr>`).join('')+
+    (missing?`<tr><td><span class="agx-nodate">no date</span></td><td style="text-align:right">${fmtNum(missing)}</td><td style="text-align:right">${fmtNum(missQty)}</td><td style="text-align:right">—</td></tr>`:'')+`</tbody></table>`;
   const sub=document.getElementById('agingSub');
-  if(sub) sub.innerHTML=`Days since auction date for auctioned-but-not-fully-lifted lots, as of ${new Date().toISOString().slice(0,10)}. `+
-    `<b>${fmtNum(missing)}</b> lot(s) (${fmtNum(missQty)} pending qty) have a missing / unparseable auction date`+(future?`; <b>${fmtNum(future)}</b> lot(s) carry a future-dated auction and are excluded from aging`:'')+`.`;
-  const top=pend.sort((a,b)=>b.days-a.days).slice(0,10);
-  const topw=document.getElementById('agingTopWrap');
-  if(topw) topw.innerHTML= top.length===0 ? '<div class="empty-state">No auctioned lots are pending lifting under the current filters. ✓</div>' :
-    `<table class="data-table"><thead><tr><th>Zone</th><th>Region</th><th>Asset Category</th><th>Auction Date</th><th style="text-align:right">Days Pending</th><th style="text-align:right">Pending Qty</th><th style="text-align:right">Auction Value (Rs.)</th></tr></thead><tbody>`+
-    top.map(t=>`<tr><td>${escapeHtml(t.zone)}</td><td>${escapeHtml(t.region)}</td><td>${escapeHtml(t.cat)}</td><td>${t.date.toISOString().slice(0,10)}</td><td style="text-align:right;font-weight:700">${fmtNum(t.days)}</td><td style="text-align:right">${fmtNum(t.pq)}</td><td style="text-align:right">${fmtNum(t.val)}</td></tr>`).join('')+`</tbody></table>`;
+  if(sub) sub.innerHTML=`Days since auction date for auctioned-but-not-fully-lifted lots, as of ${new Date().toISOString().slice(0,10)}. Buckets: <b style="color:#16A34A">0–30</b> · <b style="color:#F59E0B">31–60</b> · <b style="color:#EA580C">61–90</b> · <b style="color:#DC2626">90+</b> days. <b>${fmtNum(missing)}</b> lot(s) have a missing / unparseable auction date (shown as a flagged &ldquo;no date&rdquo; group, never excluded).`;
+}
+
+/* ==================== PENDING-LIFTING AGING EXPLORER (collapsible tree-table) ==================== */
+const AGX={mode:'A', sort:{key:'days',dir:'desc'}, expanded:new Set(), tree:null, data:[], seq:0};
+function agxAggNew(){ return {n:0,pq:0,val:0,maxDays:null,wSum:0,wVal:0,sumDays:0,dated:0,noDate:0}; }
+function agxAggAdd(a,l){ a.n++; a.pq+=l.pq; a.val+=l.val;
+  if(l.days!=null){ a.dated++; a.sumDays+=l.days; if(a.maxDays==null||l.days>a.maxDays) a.maxDays=l.days; a.wSum+=l.val*l.days; a.wVal+=l.val; } else a.noDate++; }
+function agxAvg(a){ if(a.wVal>0) return a.wSum/a.wVal; if(a.dated>0) return a.sumDays/a.dated; return null; }
+function agxBuild(leaves, mode){
+  const levels = mode==='B' ? [l=>l.cat,l=>l.zone,l=>l.region] : [l=>l.zone,l=>l.region,l=>l.cat];
+  const root={children:new Map(), agg:agxAggNew(), leaves:[]};
+  leaves.forEach(l=>{ agxAggAdd(root.agg,l); let node=root;
+    levels.forEach((fn,i)=>{ const key=(fn(l)||'(Unspecified)'); let c=node.children.get(key);
+      if(!c){ c={name:key, level:i, _id:++AGX.seq, children:new Map(), agg:agxAggNew(), leaves:[], last:(i===levels.length-1)}; node.children.set(key,c); }
+      agxAggAdd(c.agg,l); node=c; });
+    node.leaves.push(l); });
+  return root;
+}
+function agxSortCmp(){ const {key,dir}=AGX.sort; const s=dir==='asc'?1:-1;
+  const val=(o)=>{ const a=o.agg;
+    if(a){ switch(key){case 'lots':return a.n;case 'pq':return a.pq;case 'val':return a.val;case 'avg':{const v=agxAvg(a);return v==null?-1:v;}default:return a.maxDays==null?-1:a.maxDays;} }
+    switch(key){case 'lots':return 1;case 'pq':return o.pq;case 'val':return o.val;default:return o.days==null?-1:o.days;} };
+  return (x,y)=> s*(val(x)-val(y));
+}
+function agxDaysCell(days){ if(days==null) return '<span class="agx-nodate">no date</span>';
+  return `<span class="agx-days" style="background:${ageColor(days)}">${fmtNum(days)}</span>`; }
+function agxNodeRow(node, depth){
+  const a=node.agg; const open=AGX.expanded.has(node._id); const pad=depth*16+4; const avg=agxAvg(a);
+  const flag=a.noDate?`<span class="agx-flag" title="${fmtNum(a.noDate)} lot(s) here have no auction date">▲</span>`:'';
+  return `<tr class="agx-row" onclick="agxToggle(${node._id})">`+
+    `<td><div class="agx-name" style="padding-left:${pad}px"><span class="agx-chev ${open?'open':''}">▶</span><span>${escapeHtml(node.name)}</span>${flag}</div></td>`+
+    `<td class="num">${fmtNum(a.n)}</td><td class="num">${fmtNum(a.pq)}</td><td class="num">${fmtNum(a.val)}</td>`+
+    `<td class="num">${agxDaysCell(a.maxDays)}</td><td class="num">${avg==null?'—':fmtNum(Math.round(avg))}</td><td class="num">—</td></tr>`;
+}
+function agxLeafRow(l, depth){
+  const pad=depth*16+4;
+  const fb=l.fallback?`<span class="agx-flag" title="Name from ASSET NAME (Pasted) — Asset Name (Matched) was blank">▲</span>`:'';
+  return `<tr class="agx-leaf">`+
+    `<td><div class="agx-name" style="padding-left:${pad}px"><span style="width:11px;flex:none"></span><span>${escapeHtml(l.name)}</span>${fb}</div></td>`+
+    `<td class="num">1</td><td class="num">${fmtNum(l.pq)}</td><td class="num">${fmtNum(l.val)}</td>`+
+    `<td class="num">${agxDaysCell(l.days)}</td><td class="num">—</td><td class="num">${l.date?l.date.toISOString().slice(0,10):'—'}</td></tr>`;
+}
+function agxWalk(node, depth, out){
+  const kids=[...node.children.values()].sort(agxSortCmp());
+  kids.forEach(c=>{ out.push(agxNodeRow(c,depth));
+    if(AGX.expanded.has(c._id)){
+      if(c.last) c.leaves.slice().sort(agxSortCmp()).forEach(l=> out.push(agxLeafRow(l,depth+1)));
+      else agxWalk(c,depth+1,out);
+    } });
+}
+function agxRender(){
+  const wrap=document.getElementById('agxTreeWrap'); if(!wrap) return;
+  if(!AGX.tree || AGX.tree.agg.n===0){ wrap.innerHTML='<div class="empty-state">No auctioned lots are pending lifting under the current filters. ✓</div>'; return; }
+  const cols=[{k:'name',l:'Zone / Region / Category / Lot',sort:false},{k:'lots',l:'Lots',num:true},{k:'pq',l:'Pending Qty',num:true},
+    {k:'val',l:'Auction Value (Rs.)',num:true},{k:'days',l:'Days (max)',num:true},{k:'avg',l:'Avg Days (wtd)',num:true},{k:'adate',l:'Auction Date',num:true,sort:false}];
+  const arw=k=> AGX.sort.key===k?(AGX.sort.dir==='asc'?'▲':'▼'):'↕';
+  const head='<tr>'+cols.map(c=>{ const sortable=c.sort!==false;
+    return `<th class="${c.num?'num ':''}${sortable?'sortable ':''}${AGX.sort.key===c.k?'sorted':''}" ${sortable?`onclick="agxSortBy('${c.k}')"`:''}>${c.l}${sortable?`<span class="arw">${arw(c.k)}</span>`:''}</th>`;
+  }).join('')+'</tr>';
+  const out=[]; agxWalk(AGX.tree,0,out);
+  wrap.innerHTML=`<table class="agx-table"><thead>${head}</thead><tbody>${out.join('')}</tbody></table>`;
+}
+function agxToggle(id){ if(AGX.expanded.has(id)) AGX.expanded.delete(id); else AGX.expanded.add(id); agxRender(); }
+function agxSortBy(k){ if(AGX.sort.key===k) AGX.sort.dir=AGX.sort.dir==='asc'?'desc':'asc'; else AGX.sort={key:k,dir:'desc'}; agxRender(); }
+function agxCollectIds(node,set){ node.children.forEach(c=>{ set.add(c._id); if(!c.last) agxCollectIds(c,set); }); }
+function agxExpandAll(){ const s=new Set(); if(AGX.tree) agxCollectIds(AGX.tree,s); AGX.expanded=s; agxRender(); }
+function agxCollapseAll(){ AGX.expanded=new Set(); agxRender(); }
+function agxSetMode(m){ if(AGX.mode===m) return; AGX.mode=m; AGX.expanded=new Set(); AGX.seq=0;
+  AGX.tree=agxBuild(pendingLeaves(AGX.data),AGX.mode); agxRender();
+  document.querySelectorAll('#agxMode .sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); }
+function renderAgingExplorer(data){
+  AGX.data=data; AGX.seq=0; AGX.expanded=new Set();
+  AGX.tree=agxBuild(pendingLeaves(data),AGX.mode);
+  const mb=document.getElementById('agxMode');
+  if(mb && !mb.__wired){ mb.__wired=true; mb.querySelectorAll('.sort-btn').forEach(b=>b.addEventListener('click',()=>agxSetMode(b.dataset.mode))); }
+  agxRender(); renderAgxTop10(data);
+}
+function renderAgxTop10(data){
+  const el=document.getElementById('agxTop10'); if(!el) return;
+  const leaves=pendingLeaves(data).filter(l=>l.days!=null).sort((a,b)=>b.days-a.days).slice(0,10);
+  el.innerHTML = leaves.length===0 ? '<div class="empty-state">No dated pending lots under the current filters.</div>' :
+    `<table><thead><tr><th>#</th><th>Zone · Region · Category</th><th>Lot</th><th class="num">Days</th><th class="num">Pending Qty</th><th class="num">Auction Value (Rs.)</th></tr></thead><tbody>`+
+    leaves.map((l,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(l.zone+' · '+l.region+' · '+l.cat)}</td><td>${escapeHtml(l.name)}${l.fallback?' <span class="agx-flag" title="pasted-name fallback">▲</span>':''}</td><td class="num"><span class="agx-days" style="background:${ageColor(l.days)}">${fmtNum(l.days)}</span></td><td class="num">${fmtNum(l.pq)}</td><td class="num">${fmtNum(l.val)}</td></tr>`).join('')+
+    `</tbody></table>`;
 }
 function renderDQNote(data){
   const el=document.getElementById('dqNote'); if(!el) return;
@@ -1164,6 +1344,118 @@ function renderTab7(data){
     : `<table class="db-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   const cnt=document.getElementById('dbCount');
   if(cnt) cnt.textContent=`Showing ${fmtNum(shown.length)} of ${fmtNum(rows.length)} filtered rows (${fmtNum(data.length)} in scope after global slicers).`;
+}
+
+/* ==================== TAB 8 — ZONE PROGRESS (disposal funnel by zone) ==================== */
+/* Canonical USC zones (from the legacy dashboard) — zones absent from the data render as
+   greyed "Not Uploaded" placeholders. The only configurable list; present zones are data-driven. */
+const CANONICAL_ZONES=['Islamabad','Lahore','Faisalabad','Multan','Karachi','Sukkur','Quetta','Peshawar','Abbottabad'];
+const ZP={collapsed:new Set(), keymap:{}, seq:0};
+function fmtRsShort(n){ if(n>=1e7) return 'Rs '+(n/1e7).toFixed(2)+' Cr'; if(n>=1e5) return 'Rs '+(n/1e5).toFixed(2)+' L'; return 'Rs '+fmtNum(n); }
+function zBarColor(p){ return p>=90?'#16A34A':(p>=50?'#F59E0B':'#DC2626'); }
+/* Payment denominator = value of the LIFTED quantity only (per row), with a fallback for
+   fully-lifted rows whose unit prices are blank (counted in the DQ footnote). */
+function liftedValueOf(r){
+  const lu=+(r[COL.liftedQtyUsable]||0), ls=+(r[COL.liftedQtyScrap]||0);
+  const pu=+(r[COL.apUsable]||0), ps=+(r[COL.apScrap]||0);
+  let lv=lu*pu+ls*ps, fb=false;
+  if(lv<=0 && deriveStatus(r)==='Lifted'){ const tav=+(r[COL.auctValueTotal]||0); if(tav>0){ lv=tav; fb=true; } }
+  return {lv,fb};
+}
+function zpFunnel(rows){
+  let verified=0,auctioned=0,lifted=0,liftedVal=0,pay=0,fb=0;
+  rows.forEach(r=>{ verified+=+(r[COL.cQty]||0); auctioned+=+(r[COL.auctQtyTotal]||0); lifted+=+(r[COL.liftedQty]||0);
+    const lvo=liftedValueOf(r); liftedVal+=lvo.lv; if(lvo.fb) fb++; pay+=+(r[COL.payRs]||0); });
+  return {verified,auctioned,lifted,liftedVal,pay,fb,n:rows.length};
+}
+function zPctBar(num,den,payment){
+  if(den<=0){
+    if(payment && num>0) return `<div class="zpct" style="color:#B45309">&gt;100% ▲</div><div class="zpct-sub">no lifted value recorded</div>`;
+    return `<div class="znr">Not Recorded</div>`;
+  }
+  const p=num/den*100, w=Math.max(2,Math.min(100,p)), col=zBarColor(p);
+  const mk=p>100?` <span style="color:#B45309" title="exceeds 100% — advances / over-payment">▲</span>`:'';
+  return `<div class="zpct" style="color:${col}">${p.toFixed(0)}%${mk}</div><div class="zbar"><span style="width:${w}%;background:${col}"></span></div>`;
+}
+function zStage(lbl,val,sub){ return `<div class="zc-stage"><div class="s-lbl">${lbl}</div><div class="s-val">${val}</div><div class="s-sub">${sub||''}</div></div>`; }
+function zRow(label, rows, isClass, toggleId, open){
+  const f=zpFunnel(rows);
+  const chev = isClass ? `<span class="zf-chev">${open?'▾':'▸'}</span> ` : '';
+  const payInner = f.pay>0 ? ('Rs '+fmtNum(f.pay)) : '<span class="znr">Not Recorded</span>';
+  const payBar = f.pay>0 ? zPctBar(f.pay,f.liftedVal,true) : '';
+  const cells = `<td>${chev}${escapeHtml(label)}</td>`+
+    `<td class="num">${f.verified>0?fmtNum(f.verified):'—'}</td>`+
+    `<td class="num"><div>${fmtNum(f.auctioned)}</div>${zPctBar(f.auctioned,f.verified,false)}</td>`+
+    `<td class="num"><div>${fmtNum(f.lifted)}</div>${zPctBar(f.lifted,f.auctioned,false)}</td>`+
+    `<td class="num"><div>${payInner}</div>${payBar}</td>`;
+  return isClass ? `<tr class="zf-class" onclick="zpToggle(${toggleId})">${cells}</tr>` : `<tr class="zf-cat">${cells}</tr>`;
+}
+function zoneCard(zoneName, allRows){
+  const rows=allRows.filter(r=>deriveStatus(r)!=='Consignment');
+  const consign=allRows.length-rows.length;
+  const f=zpFunnel(rows);
+  const regions=new Set(allRows.map(r=>r[COL.region]).filter(Boolean)).size;
+  const liftPct=f.auctioned>0?f.lifted/f.auctioned*100:null;
+  let badge; if(f.auctioned<=0) badge=['progress','In Progress'];
+    else if(liftPct>=95) badge=['complete','Complete'];
+    else if(liftPct>=30) badge=['partial','Partial']; else badge=['progress','In Progress'];
+  const strip=`<div class="zc-strip">`+
+    zStage('Verified',fmtNum(f.verified),'units counted')+
+    zStage('Auctioned',fmtNum(f.auctioned), f.verified>0?`${(f.auctioned/f.verified*100).toFixed(0)}% of verified`:'—')+
+    zStage('Lifted',fmtNum(f.lifted), f.auctioned>0?`${(f.lifted/f.auctioned*100).toFixed(0)}% of auctioned`:'—')+
+    zStage('Paid', f.pay>0?fmtRsShort(f.pay):'Not Recorded', (f.liftedVal>0&&f.pay>0)?`${(f.pay/f.liftedVal*100).toFixed(0)}% of lifted value`:'')+
+    `</div>`;
+  const GROUPS=(window.DASH_META&&DASH_META.groups)||[];
+  const byClass=new Map();
+  rows.forEach(r=>{ const cl=r[COL.assetClass]||'(Unspecified)', ct=r[COL.assetCat]||'(Unspecified)';
+    if(!byClass.has(cl)) byClass.set(cl,new Map());
+    const m=byClass.get(cl); if(!m.has(ct)) m.set(ct,[]); m.get(ct).push(r); });
+  const orderedClasses=[]; GROUPS.forEach(g=>{ if(byClass.has(g.main)) orderedClasses.push(g.main); });
+  [...byClass.keys()].forEach(c=>{ if(!orderedClasses.includes(c)) orderedClasses.push(c); });
+  let tbody='';
+  orderedClasses.forEach(cl=>{
+    const catMap=byClass.get(cl); const clRows=[...catMap.values()].flat();
+    const key=zoneName+'||'+cl, id=++ZP.seq; ZP.keymap[id]=key;
+    const open=!ZP.collapsed.has(key);
+    tbody+=zRow(cl,clRows,true,id,open);
+    if(open){
+      const gsubs=((GROUPS.find(g=>g.main===cl)||{}).subs)||[];
+      const orderedCats=[]; gsubs.forEach(s=>{ if(catMap.has(s)) orderedCats.push(s); });
+      [...catMap.keys()].forEach(c=>{ if(!orderedCats.includes(c)) orderedCats.push(c); });
+      orderedCats.forEach(ct=> tbody+=zRow(ct,catMap.get(ct),false,0,false));
+    }
+  });
+  const table=`<table class="zf-table"><thead><tr><th>Assets Class / Category</th><th>Verified</th><th>Auctioned</th><th>Lifted</th><th>Payment</th></tr></thead><tbody>${tbody}</tbody></table>`;
+  const footBits=[`${fmtNum(f.n)} lot lines`];
+  if(consign>0) footBits.push(`${fmtNum(consign)} consignment lot(s) excluded from the funnel`);
+  if(f.fb>0) footBits.push(`${fmtNum(f.fb)} fully-lifted lot(s) used Total Auction Value as the payment denominator (unit prices blank)`);
+  const foot=`<div class="zc-foot">${footBits.join(' · ')}</div>`;
+  return `<div class="zone-card"><div class="zc-head"><div><div class="zc-title">${escapeHtml(zoneName)}</div>`+
+    `<div class="zc-meta">${fmtNum(regions)} region(s) · ${fmtNum(allRows.length)} rows</div></div>`+
+    `<span class="zbadge ${badge[0]}">${badge[1]}</span></div>${strip}${table}${foot}</div>`;
+}
+function zpToggle(id){ const key=ZP.keymap[id]; if(!key) return; if(ZP.collapsed.has(key)) ZP.collapsed.delete(key); else ZP.collapsed.add(key); renderTab8(getFiltered()); }
+function renderTab8(data){
+  const grid=document.getElementById('zpGrid'); if(!grid) return;
+  ZP.seq=0; ZP.keymap={};
+  const present=new Map();
+  data.forEach(r=>{ const z=r[COL.zone]||'(Unspecified)'; if(!present.has(z)) present.set(z,[]); present.get(z).push(r); });
+  const sortMode=(document.getElementById('zpSort')||{}).value||'completion';
+  const compOf=z=>{ const f=zpFunnel(present.get(z).filter(r=>deriveStatus(r)!=='Consignment')); return f.auctioned>0?f.lifted/f.auctioned:0; };
+  const verOf=z=>zpFunnel(present.get(z)).verified;
+  let zones=[...present.keys()];
+  if(sortMode==='alpha') zones.sort((a,b)=>a.localeCompare(b));
+  else if(sortMode==='verified') zones.sort((a,b)=>verOf(b)-verOf(a));
+  else zones.sort((a,b)=>compOf(b)-compOf(a));
+  let html=zones.map(z=>zoneCard(z,present.get(z))).join('');
+  const presentLc=new Set([...present.keys()].map(z=>String(z).toLowerCase()));
+  const missing=CANONICAL_ZONES.filter(z=>!presentLc.has(z.toLowerCase()));
+  html+=missing.map(z=>`<div class="zone-card placeholder"><div class="zp-ph-name">${escapeHtml(z)}</div><div class="zp-ph-sub">Not Uploaded — data not provided yet</div></div>`).join('');
+  grid.innerHTML=html || '<div class="empty-state">No zones match the current filters.</div>';
+  const dq=document.getElementById('zpDqNote');
+  if(dq){ let totFb=0,totCons=0; present.forEach(rows=>{ totFb+=zpFunnel(rows.filter(r=>deriveStatus(r)!=='Consignment')).fb; totCons+=rows.filter(r=>deriveStatus(r)==='Consignment').length; });
+    dq.innerHTML=`<b>Funnel methodology</b> &mdash; Auctioned % is of Verified qty; Lifted % is of Auctioned qty; Payment % is of the <b>lifted value</b> (Lifted Qty Usable × Auction Price Usable + Lifted Qty Scrape × Auction Price Scrape per row). Consignment lots (<b>${fmtNum(totCons)}</b>) are excluded from all funnel percentages. <b>${fmtNum(totFb)}</b> fully-lifted lot(s) had blank unit prices, so Total Auction Value was used as the payment denominator instead. Missing payment / value / unit-price cells read &ldquo;Not Recorded&rdquo;, never 0%. Bars: <b style="color:#16A34A">≥90%</b> · <b style="color:#F59E0B">50–89%</b> · <b style="color:#DC2626">&lt;50%</b>. Payment may exceed 100% where advances were taken (shown uncapped with ▲).`;
+  }
 }
 
 /* ---------- Initial empty state ---------- */"""

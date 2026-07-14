@@ -542,3 +542,44 @@ normalization (Spices→OB-Spices) now runs on **both** paths — baked (Python 
 Verified headless: **all 8 tabs, 0 console/page errors**; interaction test passed (Consignment
 filter → 15 rows, "Vehicles" search → 38, Verified-Qty sort desc top 27,198, zone/region toggles fire
 clean). Still fully self-contained (0 external requests). Published to `docs/index.html`.
+
+## 19. Aging Explorer + Zone Progress funnel tab (session 13)
+
+Two features, both fed by the same normalized dataset / derived-status / date-parse / category-
+normalization used elsewhere. Now **9 tabs**. **Data layer:** added `Asset Name (Pasted)` (F),
+`Lifted Qty Usable` (AK), `Lifted Qty Scrape` (AL), `Auction Price Usable/Scrape` (AA/AB) to COLMAP +
+JS `COL`/`NUMERIC_COLS` so both baked and upload paths carry them.
+
+**Task 1 — Pending-Lifting Aging Explorer (replaces the flat Top-10 table on the Overall tab).**
+Collapsible tree-table over all *auctioned-but-not-fully-lifted* lots (Lifting Pending + Partially
+Lifted); **one Database row = one leaf, never merged**; name falls back to `Asset Name (Pasted)` when
+`Asset Name (Matched)` is blank (▲-flagged). Two hierarchy modes via toggle — **A** Zone→Region→
+Category→lot, **B** Category→Zone→Region→lot. Everything starts collapsed; chevrons + indentation;
+**Expand all / Collapse all**; children lazy-rendered on expand (built once O(n), only visible rows
+emitted — verified 4 rows collapsed → 305 with 260 leaves on expand-all). Aggregations at every non-leaf
+level: pending lots, pending qty, auction value at stake, **max days**, **value-weighted avg days**.
+Leaf rows show auction date, days, pending qty, value. **Severity ramp** 0–30 green `#16A34A` / 31–60
+amber `#F59E0B` / 61–90 orange `#EA580C` / 90+ red `#DC2626` — reused by the buckets chart, the tree
+day-cells and the strip; missing dates are a flagged grey **“no date”** group (never excluded). Every
+numeric column sortable asc/desc (default **max days desc**), applied within siblings at each level. A
+compact **Top-10 worst lots** strip (individual lots, zone·region·category inline) sits below the tree.
+
+**Task 2 — Zone Progress tab (new, tab8).** One Baker-Tilly card per zone; canonical USC zone list
+(`CANONICAL_ZONES`, from the legacy dashboard) renders the not-yet-uploaded zones as greyed
+**“Not Uploaded”** placeholders (Islamabad, Lahore, Faisalabad, Multan, Quetta today; 4 live cards).
+Each card: header (name · region count · rows · **Complete / Partial / In Progress** badge derived from
+lifting %), a **Verified → Auctioned → Lifted → Paid** funnel strip, then an **Assets Class → Category**
+table (class = collapsible bold roll-up; OB & M&B kept separate). Columns are the funnel measured
+stage-on-stage: Verified qty (baseline) · Auctioned (qty + % of verified) · Lifted (qty + % of
+auctioned) · **Payment (Rs + % of *lifted value*)**. Lifted-value denominator per row = Lifted Qty
+Usable × Auction Price Usable + Lifted Qty Scrape × Auction Price Scrape, **falling back to Total
+Auction Value for fully-lifted rows with blank unit prices** (counted in the DQ footnote). Mini progress
+bars coloured **≥90 green / 50–89 amber / <50 red**; **payment >100% shown uncapped with ▲** (advances);
+zero/missing denominators or blank payment/value read **“Not Recorded”**, never 0%; zero-verified →
+“—”. **Consignment excluded** from all funnel %s (per-card footnote count). Zones sortable by overall
+completion % / verified qty / alphabetical.
+
+Verified headless: **all 9 tabs, 0 console/page errors**; interaction test passed — Explorer expand
+(4→8→305 rows / 260 leaves), mode-B switch (category-first), column sort, expand/collapse all; Zone
+Progress category-collapse and zone re-sort (Abbottabad first by verified qty). Still fully
+self-contained. Published to `docs/index.html`.

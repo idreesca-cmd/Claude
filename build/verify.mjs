@@ -32,10 +32,14 @@ try {
     msCols: document.querySelectorAll('#milestoneMatrix thead th').length,
     dbRows: document.querySelectorAll('#dbTableWrap tbody tr').length,
     dqNote: !!(document.getElementById('dqNote')||{}).textContent,
+    agxRows: document.querySelectorAll('#agxTreeWrap tbody tr').length,
+    agxTop10: document.querySelectorAll('#agxTop10 tbody tr').length,
+    zoneCards: document.querySelectorAll('#zpGrid .zone-card').length,
+    zonePlaceholders: document.querySelectorAll('#zpGrid .zone-card.placeholder').length,
   }));
   console.log('DIAG', JSON.stringify(diag, null, 2));
 
-  const tabs = [['tab0','Category Milestone'],['tab1','Overall'],['tab2','Quantity'],['tab3','Auction'],['tab4','Payment'],['tab5','Payments-DD'],['tab6','Anomalies'],['tab7','Database']];
+  const tabs = [['tab0','Category Milestone'],['tab1','Overall'],['tab2','Quantity'],['tab3','Auction'],['tab4','Payment'],['tab5','Payments-DD'],['tab6','Anomalies'],['tab7','Database'],['tab8','Zone Progress']];
   for (const [t,label] of tabs) {
     await page.click(`.tab-btn[data-tab="${t}"]`);
     await page.waitForTimeout(900);
