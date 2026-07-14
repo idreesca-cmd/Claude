@@ -571,13 +571,16 @@ Each card: header (name · region count · rows · **Complete / Partial / In Pro
 lifting %), a **Verified → Auctioned → Lifted → Paid** funnel strip, then an **Assets Class → Category**
 table (class = collapsible bold roll-up; OB & M&B kept separate). Columns are the funnel measured
 stage-on-stage: Verified qty (baseline) · Auctioned (qty + % of verified) · Lifted (qty + % of
-auctioned) · **Payment (Rs + % of *lifted value*)**. Lifted-value denominator per row = Lifted Qty
-Usable × Auction Price Usable + Lifted Qty Scrape × Auction Price Scrape, **falling back to Total
-Auction Value for fully-lifted rows with blank unit prices** (counted in the DQ footnote). Mini progress
-bars coloured **≥90 green / 50–89 amber / <50 red**; **payment >100% shown uncapped with ▲** (advances);
-zero/missing denominators or blank payment/value read **“Not Recorded”**, never 0%; zero-verified →
-“—”. **Consignment excluded** from all funnel %s (per-card footnote count). Zones sortable by overall
-completion % / verified qty / alphabetical.
+auctioned) · **Payment (Rs + % of lifted-row auction value)**. **Payment % = Σ Payment Rs. of the
+lifted rows ÷ Σ Total Auction Value of those same lifted rows** (rows with lifted qty > 0, each row's
+full auction value — not pro-rated by unit price). *(Corrected in-session: the first cut used a
+per-unit-price lifted-value denominator (Lifted Qty × Auction Price), which collapsed to a tiny
+denominator wherever unit prices were blank and produced absurd %s like Sukkur Fixed Assets 5142%;
+the sum-of-Total-Auction-Value-of-lifted-rows definition gives the correct 7,967,980 ÷ 8,374,915 =
+95%.)* Mini progress bars coloured **≥90 green / 50–89 amber / <50 red**; **payment >100% shown
+uncapped with ▲** (advances); zero/missing denominators or blank payment/value read **“Not Recorded”**,
+never 0%; zero-verified → “—”. **Consignment excluded** from all funnel %s (per-card footnote count).
+Zones sortable by overall completion % / verified qty / alphabetical.
 
 Verified headless: **all 9 tabs, 0 console/page errors**; interaction test passed — Explorer expand
 (4→8→305 rows / 260 leaves), mode-B switch (category-first), column sort, expand/collapse all; Zone

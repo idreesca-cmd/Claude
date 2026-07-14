@@ -1353,20 +1353,16 @@ const CANONICAL_ZONES=['Islamabad','Lahore','Faisalabad','Multan','Karachi','Suk
 const ZP={collapsed:new Set(), keymap:{}, seq:0};
 function fmtRsShort(n){ if(n>=1e7) return 'Rs '+(n/1e7).toFixed(2)+' Cr'; if(n>=1e5) return 'Rs '+(n/1e5).toFixed(2)+' L'; return 'Rs '+fmtNum(n); }
 function zBarColor(p){ return p>=90?'#16A34A':(p>=50?'#F59E0B':'#DC2626'); }
-/* Payment denominator = value of the LIFTED quantity only (per row), with a fallback for
-   fully-lifted rows whose unit prices are blank (counted in the DQ footnote). */
-function liftedValueOf(r){
-  const lu=+(r[COL.liftedQtyUsable]||0), ls=+(r[COL.liftedQtyScrap]||0);
-  const pu=+(r[COL.apUsable]||0), ps=+(r[COL.apScrap]||0);
-  let lv=lu*pu+ls*ps, fb=false;
-  if(lv<=0 && deriveStatus(r)==='Lifted'){ const tav=+(r[COL.auctValueTotal]||0); if(tav>0){ lv=tav; fb=true; } }
-  return {lv,fb};
-}
+/* Payment % = Σ Payment Rs. of the LIFTED rows ÷ Σ Total Auction Value of those same lifted rows.
+   "Lifted rows" = rows with any lifted quantity (Lifted + the partially-lifted rows), using each
+   row's full Total Auction Value (not pro-rated). Payment / value on not-yet-lifted rows is not
+   counted here (it surfaces on the Payment & Lifting and Payments & DD tabs). */
 function zpFunnel(rows){
-  let verified=0,auctioned=0,lifted=0,liftedVal=0,pay=0,fb=0;
-  rows.forEach(r=>{ verified+=+(r[COL.cQty]||0); auctioned+=+(r[COL.auctQtyTotal]||0); lifted+=+(r[COL.liftedQty]||0);
-    const lvo=liftedValueOf(r); liftedVal+=lvo.lv; if(lvo.fb) fb++; pay+=+(r[COL.payRs]||0); });
-  return {verified,auctioned,lifted,liftedVal,pay,fb,n:rows.length};
+  let verified=0,auctioned=0,lifted=0,liftedTav=0,pay=0,liftedRows=0;
+  rows.forEach(r=>{ verified+=+(r[COL.cQty]||0); auctioned+=+(r[COL.auctQtyTotal]||0);
+    const lq=+(r[COL.liftedQty]||0); lifted+=lq;
+    if(lq>0){ liftedRows++; liftedTav+=+(r[COL.auctValueTotal]||0); pay+=+(r[COL.payRs]||0); } });
+  return {verified,auctioned,lifted,liftedTav,pay,liftedRows,n:rows.length};
 }
 function zPctBar(num,den,payment){
   if(den<=0){
@@ -1382,7 +1378,7 @@ function zRow(label, rows, isClass, toggleId, open){
   const f=zpFunnel(rows);
   const chev = isClass ? `<span class="zf-chev">${open?'▾':'▸'}</span> ` : '';
   const payInner = f.pay>0 ? ('Rs '+fmtNum(f.pay)) : '<span class="znr">Not Recorded</span>';
-  const payBar = f.pay>0 ? zPctBar(f.pay,f.liftedVal,true) : '';
+  const payBar = f.pay>0 ? zPctBar(f.pay,f.liftedTav,true) : '';
   const cells = `<td>${chev}${escapeHtml(label)}</td>`+
     `<td class="num">${f.verified>0?fmtNum(f.verified):'—'}</td>`+
     `<td class="num"><div>${fmtNum(f.auctioned)}</div>${zPctBar(f.auctioned,f.verified,false)}</td>`+
@@ -1403,7 +1399,7 @@ function zoneCard(zoneName, allRows){
     zStage('Verified',fmtNum(f.verified),'units counted')+
     zStage('Auctioned',fmtNum(f.auctioned), f.verified>0?`${(f.auctioned/f.verified*100).toFixed(0)}% of verified`:'—')+
     zStage('Lifted',fmtNum(f.lifted), f.auctioned>0?`${(f.lifted/f.auctioned*100).toFixed(0)}% of auctioned`:'—')+
-    zStage('Paid', f.pay>0?fmtRsShort(f.pay):'Not Recorded', (f.liftedVal>0&&f.pay>0)?`${(f.pay/f.liftedVal*100).toFixed(0)}% of lifted value`:'')+
+    zStage('Paid', f.pay>0?fmtRsShort(f.pay):'Not Recorded', (f.liftedTav>0&&f.pay>0)?`${(f.pay/f.liftedTav*100).toFixed(0)}% of lifted-row value`:'')+
     `</div>`;
   const GROUPS=(window.DASH_META&&DASH_META.groups)||[];
   const byClass=new Map();
@@ -1426,9 +1422,8 @@ function zoneCard(zoneName, allRows){
     }
   });
   const table=`<table class="zf-table"><thead><tr><th>Assets Class / Category</th><th>Verified</th><th>Auctioned</th><th>Lifted</th><th>Payment</th></tr></thead><tbody>${tbody}</tbody></table>`;
-  const footBits=[`${fmtNum(f.n)} lot lines`];
+  const footBits=[`${fmtNum(f.n)} lot lines · ${fmtNum(f.liftedRows)} lifted lot(s)`];
   if(consign>0) footBits.push(`${fmtNum(consign)} consignment lot(s) excluded from the funnel`);
-  if(f.fb>0) footBits.push(`${fmtNum(f.fb)} fully-lifted lot(s) used Total Auction Value as the payment denominator (unit prices blank)`);
   const foot=`<div class="zc-foot">${footBits.join(' · ')}</div>`;
   return `<div class="zone-card"><div class="zc-head"><div><div class="zc-title">${escapeHtml(zoneName)}</div>`+
     `<div class="zc-meta">${fmtNum(regions)} region(s) · ${fmtNum(allRows.length)} rows</div></div>`+
@@ -1453,8 +1448,8 @@ function renderTab8(data){
   html+=missing.map(z=>`<div class="zone-card placeholder"><div class="zp-ph-name">${escapeHtml(z)}</div><div class="zp-ph-sub">Not Uploaded — data not provided yet</div></div>`).join('');
   grid.innerHTML=html || '<div class="empty-state">No zones match the current filters.</div>';
   const dq=document.getElementById('zpDqNote');
-  if(dq){ let totFb=0,totCons=0; present.forEach(rows=>{ totFb+=zpFunnel(rows.filter(r=>deriveStatus(r)!=='Consignment')).fb; totCons+=rows.filter(r=>deriveStatus(r)==='Consignment').length; });
-    dq.innerHTML=`<b>Funnel methodology</b> &mdash; Auctioned % is of Verified qty; Lifted % is of Auctioned qty; Payment % is of the <b>lifted value</b> (Lifted Qty Usable × Auction Price Usable + Lifted Qty Scrape × Auction Price Scrape per row). Consignment lots (<b>${fmtNum(totCons)}</b>) are excluded from all funnel percentages. <b>${fmtNum(totFb)}</b> fully-lifted lot(s) had blank unit prices, so Total Auction Value was used as the payment denominator instead. Missing payment / value / unit-price cells read &ldquo;Not Recorded&rdquo;, never 0%. Bars: <b style="color:#16A34A">≥90%</b> · <b style="color:#F59E0B">50–89%</b> · <b style="color:#DC2626">&lt;50%</b>. Payment may exceed 100% where advances were taken (shown uncapped with ▲).`;
+  if(dq){ let totCons=0; present.forEach(rows=>{ totCons+=rows.filter(r=>deriveStatus(r)==='Consignment').length; });
+    dq.innerHTML=`<b>Funnel methodology</b> &mdash; Auctioned % is of Verified qty; Lifted % is of Auctioned qty; <b>Payment % = Σ Payment Rs. of the lifted rows ÷ Σ Total Auction Value of those same lifted rows</b> (rows with lifted qty &gt; 0, each row's full auction value). Consignment lots (<b>${fmtNum(totCons)}</b>) are excluded from all funnel percentages. Missing payment / value cells read &ldquo;Not Recorded&rdquo;, never 0%. Bars: <b style="color:#16A34A">≥90%</b> · <b style="color:#F59E0B">50–89%</b> · <b style="color:#DC2626">&lt;50%</b>. Payment may exceed 100% where advances were taken (shown uncapped with ▲).`;
   }
 }
 
