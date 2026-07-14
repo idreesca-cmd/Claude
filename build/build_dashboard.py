@@ -309,16 +309,23 @@ TAB1_CSS = """
  .db-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;}
  .db-toolbar input,.db-toolbar select{font-size:12px;padding:6px 10px;border:1px solid var(--bt-border);border-radius:7px;background:#fff;color:var(--bt-slate);}
  .db-toolbar input{min-width:230px;flex:1;}
- .db-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;}
- .db-table thead th{position:sticky;top:0;z-index:2;background:var(--bt-charcoal);color:#fff;font-weight:600;padding:9px 10px;text-align:left;cursor:pointer;white-space:nowrap;user-select:none;}
+ .db-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;table-layout:fixed;}
+ .db-table thead th{position:sticky;top:0;z-index:2;background:var(--bt-charcoal);color:#fff;font-weight:600;padding:9px 22px 9px 10px;text-align:left;cursor:pointer;white-space:nowrap;user-select:none;position:relative;overflow:hidden;}
  .db-table thead th.num{text-align:right;}
  .db-table thead th .arw{opacity:.45;font-size:10px;margin-left:4px;}
  .db-table thead th.sorted{background:#1b1f26;}
  .db-table thead th.sorted .arw{opacity:1;}
- .db-table td{padding:7px 10px;border-bottom:1px solid var(--bt-border);white-space:nowrap;color:#374151;}
+ .db-table thead tr.db-filter-row th{top:35px;z-index:1;background:#20242c;padding:4px 6px;cursor:default;overflow:visible;}
+ .db-col-filter{width:100%;font-size:10.5px;padding:3px 6px;border:1px solid #3a4149;border-radius:5px;background:#fff;color:var(--bt-slate);box-sizing:border-box;}
+ .db-col-filter::placeholder{color:#9CA3AF;}
+ .db-resizer{position:absolute;right:0;top:0;height:100%;width:7px;cursor:col-resize;}
+ .db-resizer:hover{background:rgba(255,255,255,.3);}
+ .db-table td{padding:7px 10px;border-bottom:1px solid var(--bt-border);white-space:nowrap;color:#374151;overflow:hidden;text-overflow:ellipsis;}
  .db-table tbody tr:nth-child(even){background:#FAFBFC;}
  .db-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
  .db-count{font-size:11.5px;color:var(--bt-muted);margin-top:8px;}
+ .db-hint{font-size:10.5px;color:var(--bt-muted);}
+ .status-pill.dbp{padding:3px 12px;font-size:11.5px;letter-spacing:.01em;box-shadow:0 1px 1px rgba(16,24,40,.12);}
  /* Pending-Lifting Aging Explorer (tree-table) */
  .agx-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;min-width:820px;}
  .agx-table thead th{position:sticky;top:0;z-index:2;background:var(--bt-charcoal);color:#fff;font-weight:600;padding:8px 10px;white-space:nowrap;user-select:none;text-align:left;}
@@ -381,8 +388,9 @@ sub(r"</style>", lambda m: TAB0_CSS + TAB1_CSS + " #sourcePath{white-space:nowra
 # 3) nav — add tab0, drop pending pill, tab0 active
 sub(r'<button class="tab-btn active" data-tab="tab1">Overall Project Status</button>',
     '<button class="tab-btn active" data-tab="tab0">Category Milestone Overview</button>\n'
+    '        <button class="tab-btn" data-tab="tab8">Zone Progress</button>\n'
     '        <button class="tab-btn" data-tab="tab1">Overall Project Status</button>',
-    label="nav tab0")
+    label="nav tab0 + zone-progress 2nd")
 sub(r'<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting<span class="pending-pill">Pending</span></button>',
     '<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>',
     label="nav tab4 pill")
@@ -520,9 +528,8 @@ lit('<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>',
     '<button class="tab-btn" data-tab="tab4">Payment &amp; Lifting</button>\n'
     '        <button class="tab-btn" data-tab="tab5">Payments &amp; DD Detail</button>\n'
     '        <button class="tab-btn" data-tab="tab6">Anomalies</button>\n'
-    '        <button class="tab-btn" data-tab="tab7">Database</button>\n'
-    '        <button class="tab-btn" data-tab="tab8">Zone Progress</button>',
-    label="nav tab5/6/7/8")
+    '        <button class="tab-btn" data-tab="tab7">Database</button>',
+    label="nav tab5/6/7")
 
 # 5d) new sections for Payments + Anomalies (inserted before </main>)
 TAB56 = """        <section id="tab5" class="tab-pane">
@@ -555,16 +562,12 @@ TAB56 = """        <section id="tab5" class="tab-pane">
         <section id="tab7" class="tab-pane">
           <div class="chart-card">
             <div class="chart-title">Database &mdash; Full Asset-Line Register</div>
-            <div class="chart-sub">Every asset line with its derived disposal status. Type to search, use the drop-downs to filter, and click any column header to sort ascending / descending. Respects the global Zone / Region slicers.</div>
+            <div class="chart-sub">Every asset line with its derived disposal status. Type in a column&rsquo;s filter box to narrow that column, drag a column edge to resize it, and click a header to sort ascending / descending. The search box matches every column. Respects the global Zone / Region slicers.</div>
             <div class="db-toolbar">
-              <input id="dbSearch" type="text" placeholder="Search zone, region, category, asset, status, bidder&hellip;" oninput="renderTab7(getFiltered())">
-              <select id="dbFZone" onchange="renderTab7(getFiltered())"><option value="">All Zones</option></select>
-              <select id="dbFRegion" onchange="renderTab7(getFiltered())"><option value="">All Regions</option></select>
-              <select id="dbFClass" onchange="renderTab7(getFiltered())"><option value="">All Asset Classes</option></select>
-              <select id="dbFCat" onchange="renderTab7(getFiltered())"><option value="">All Categories</option></select>
-              <select id="dbFStatus" onchange="renderTab7(getFiltered())"><option value="">All Statuses</option></select>
+              <input id="dbSearch" type="text" placeholder="Search all columns&hellip;" oninput="dbBody()">
+              <span class="db-hint">Per-column filters sit under each header &middot; drag column edges to resize &middot; click a header to sort.</span>
             </div>
-            <div id="dbTableWrap" class="data-table-wrap" style="max-height:640px;"></div>
+            <div id="dbTableWrap" class="data-table-wrap" style="max-height:640px;overflow:auto;"></div>
             <div id="dbCount" class="db-count"></div>
           </div>
         </section>
@@ -1207,7 +1210,7 @@ function agxLeafRow(l, depth){
   return `<tr class="agx-leaf">`+
     `<td><div class="agx-name" style="padding-left:${pad}px"><span style="width:11px;flex:none"></span><span>${escapeHtml(l.name)}</span>${fb}</div></td>`+
     `<td class="num">1</td><td class="num">${fmtNum(l.pq)}</td><td class="num">${fmtNum(l.val)}</td>`+
-    `<td class="num">${agxDaysCell(l.days)}</td><td class="num">—</td><td class="num">${l.date?l.date.toISOString().slice(0,10):'—'}</td></tr>`;
+    `<td class="num">${agxDaysCell(l.days)}</td><td class="num">—</td><td class="num">${l.date?fmtDMY(l.date):'—'}</td></tr>`;
 }
 function agxWalk(node, depth, out){
   const kids=[...node.children.values()].sort(agxSortCmp());
@@ -1274,76 +1277,101 @@ function wireT1Toggles(){
   wire('regionSort', v=>REGION_SORT=v, renderRegionCmp);
 }
 
-/* ==================== TAB 7 — DATABASE (sortable / searchable register) ==================== */
-let DB_SORT={key:'zone',dir:'asc'};
+/* ==================== TAB 7 — DATABASE (sortable / per-column-filter / resizable) ========== */
+const DB_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDMY(v){ const d=parseDateJS(v); if(!d) return '—';
+  return `${String(d.getDate()).padStart(2,'0')}-${DB_MONTHS[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`; }
+/* choose black/white pill text by background luminance so light pills (Partially Lifted) stay readable */
+function pillTextColor(hex){ const c=(hex||'').replace('#',''); if(c.length<6) return '#fff';
+  const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
+  return (0.2126*r+0.7152*g+0.0587*b)/255 > 0.62 ? '#1f2937' : '#ffffff'; }
 const DB_COLS=[
-  {key:'zone',label:'Zone',get:r=>r[COL.zone]},
-  {key:'region',label:'Region',get:r=>r[COL.region]},
-  {key:'class',label:'Assets Class',get:r=>r[COL.assetClass]},
-  {key:'cat',label:'Assets Category',get:r=>r[COL.assetCat]},
-  {key:'asset',label:'Asset Name',get:r=>r[COL.assetName]},
-  {key:'cQty',label:'Verified Qty',get:r=>+(r[COL.cQty]||0),num:true},
-  {key:'status',label:'Status',get:r=>deriveStatus(r)},
-  {key:'adate',label:'Auction Date',get:r=>(r[COL.auctionDate]||'').toString().slice(0,10)},
-  {key:'aQty',label:'Auction Qty',get:r=>+(r[COL.auctQtyTotal]||0),num:true},
-  {key:'lQty',label:'Lifted Qty',get:r=>+(r[COL.liftedQty]||0),num:true},
-  {key:'bQty',label:'Balance Qty',get:r=>+(r[COL.balanceQty]||0),num:true},
-  {key:'val',label:'Auction Value (Rs.)',get:r=>+(r[COL.auctValueTotal]||0),num:true},
+  {key:'zone',label:'Zone',get:r=>r[COL.zone],w:88},
+  {key:'region',label:'Region',get:r=>r[COL.region],w:120},
+  {key:'class',label:'Assets Class',get:r=>r[COL.assetClass],w:108},
+  {key:'cat',label:'Assets Category',get:r=>r[COL.assetCat],w:140},
+  {key:'asset',label:'Asset Name',get:r=>r[COL.assetName],w:250},
+  {key:'cQty',label:'Verified Qty',get:r=>+(r[COL.cQty]||0),num:true,w:96},
+  {key:'status',label:'Status',get:r=>deriveStatus(r),w:140},
+  {key:'adate',label:'Auction Date',get:r=>r[COL.auctionDate]||'',date:true,w:112},
+  {key:'aQty',label:'Auction Qty',get:r=>+(r[COL.auctQtyTotal]||0),num:true,w:96},
+  {key:'lQty',label:'Lifted Qty',get:r=>+(r[COL.liftedQty]||0),num:true,w:92},
+  {key:'bQty',label:'Balance Qty',get:r=>+(r[COL.balanceQty]||0),num:true,w:98},
+  {key:'val',label:'Auction Value (Rs.)',get:r=>+(r[COL.auctValueTotal]||0),num:true,w:130},
+  {key:'pay',label:'Payment (Rs.)',get:r=>+(r[COL.payRs]||0),num:true,w:120},
 ];
-function dbSort(key){
-  const col=DB_COLS.find(c=>c.key===key)||DB_COLS[0];
-  if(DB_SORT.key===key) DB_SORT.dir = DB_SORT.dir==='asc'?'desc':'asc';
-  else DB_SORT={key, dir: col.num?'desc':'asc'};
-  renderTab7(getFiltered());
-}
-function fillDbFilters(){
-  const rows=(typeof RAW!=='undefined'&&RAW)||[];
-  const fill=(id,vals)=>{ const el=document.getElementById(id); if(!el||el.options.length>1) return;
-    [...new Set(vals.filter(x=>x!==''&&x!=null))].sort((a,b)=>String(a).localeCompare(String(b)))
-      .forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); }); };
-  fill('dbFZone',rows.map(r=>r[COL.zone])); fill('dbFRegion',rows.map(r=>r[COL.region]));
-  fill('dbFClass',rows.map(r=>r[COL.assetClass])); fill('dbFCat',rows.map(r=>r[COL.assetCat]));
-  fill('dbFStatus',rows.map(r=>deriveStatus(r)));
-}
-function renderTab7(data){
-  const wrap=document.getElementById('dbTableWrap'); if(!wrap) return;
-  fillDbFilters();
-  const val=id=>{const e=document.getElementById(id); return e?e.value:'';};
-  const q=(val('dbSearch')||'').trim().toLowerCase();
-  const fz=val('dbFZone'),fr=val('dbFRegion'),fc=val('dbFClass'),fk=val('dbFCat'),fs=val('dbFStatus');
-  let rows=data.filter(r=>{
-    if(fz&&r[COL.zone]!==fz) return false;
-    if(fr&&r[COL.region]!==fr) return false;
-    if(fc&&r[COL.assetClass]!==fc) return false;
-    if(fk&&r[COL.assetCat]!==fk) return false;
-    const st=deriveStatus(r); if(fs&&st!==fs) return false;
-    if(q){ const hay=[r[COL.zone],r[COL.region],r[COL.assetClass],r[COL.assetCat],r[COL.assetName],st,r[COL.bidder]].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+const DBX={data:[], sort:{key:'zone',dir:'asc'}, filters:{}, widths:{}, built:false};
+function dbCellDisp(c,r){ if(c.date) return fmtDMY(r[COL.auctionDate]); const v=c.get(r);
+  return c.num ? fmtNum(+v||0) : String(v==null?'':v); }
+function dbSortVal(c,r){ if(c.date){ const d=parseDateJS(r[COL.auctionDate]); return d?d.getTime():-Infinity; }
+  if(c.num) return +c.get(r)||0; return String(c.get(r)||'').toLowerCase(); }
+function dbFilteredSorted(){
+  const cols=DB_COLS;
+  const gs=((document.getElementById('dbSearch')||{}).value||'').trim().toLowerCase();
+  let rows=DBX.data.filter(r=>{
+    if(gs){ const hay=cols.map(c=>dbCellDisp(c,r)).join(' ').toLowerCase(); if(!hay.includes(gs)) return false; }
+    for(const c of cols){ const fv=(DBX.filters[c.key]||'').trim().toLowerCase();
+      if(fv && !String(dbCellDisp(c,r)).toLowerCase().includes(fv)) return false; }
     return true;
   });
-  const col=DB_COLS.find(c=>c.key===DB_SORT.key)||DB_COLS[0];
-  rows.sort((a,b)=>{ let x=col.get(a),y=col.get(b);
-    if(col.num){ x=+x||0; y=+y||0; return DB_SORT.dir==='asc'?x-y:y-x; }
-    x=String(x).toLowerCase(); y=String(y).toLowerCase(); return DB_SORT.dir==='asc'?x.localeCompare(y):y.localeCompare(x); });
-  const arw=c=> DB_SORT.key===c.key ? (DB_SORT.dir==='asc'?'▲':'▼') : '↕';
-  const head='<tr>'+DB_COLS.map(c=>`<th class="${DB_SORT.key===c.key?'sorted':''}${c.num?' num':''}" onclick="dbSort('${c.key}')">${c.label}<span class="arw">${arw(c)}</span></th>`).join('')+'</tr>';
-  const shown=rows.slice(0,1000);
-  const body=shown.map(r=>{ const st=deriveStatus(r);
-    return '<tr>'+
-      `<td>${escapeHtml(r[COL.zone])}</td><td>${escapeHtml(r[COL.region])}</td>`+
-      `<td>${escapeHtml(r[COL.assetClass])}</td><td>${escapeHtml(r[COL.assetCat])}</td>`+
-      `<td>${escapeHtml(r[COL.assetName])}</td>`+
-      `<td class="num">${fmtNum(+(r[COL.cQty]||0))}</td>`+
-      `<td><span class="status-pill" style="background:${STATUS_COLORS[st]||'#6B7280'}">${st}</span></td>`+
-      `<td>${escapeHtml((r[COL.auctionDate]||'').toString().slice(0,10))||'—'}</td>`+
-      `<td class="num">${fmtNum(+(r[COL.auctQtyTotal]||0))}</td>`+
-      `<td class="num">${fmtNum(+(r[COL.liftedQty]||0))}</td>`+
-      `<td class="num">${fmtNum(+(r[COL.balanceQty]||0))}</td>`+
-      `<td class="num">${fmtNum(+(r[COL.auctValueTotal]||0))}</td></tr>`;
-  }).join('');
-  wrap.innerHTML= rows.length===0 ? '<div class="empty-state">No records match the current search / filters.</div>'
-    : `<table class="db-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  const col=cols.find(c=>c.key===DBX.sort.key)||cols[0];
+  rows.sort((a,b)=>{ let x=dbSortVal(col,a),y=dbSortVal(col,b);
+    if(typeof x==='number'&&typeof y==='number') return DBX.sort.dir==='asc'?x-y:y-x;
+    x=String(x); y=String(y); return DBX.sort.dir==='asc'?x.localeCompare(y):y.localeCompare(x); });
+  return rows;
+}
+function dbRowHtml(r){
+  const st=deriveStatus(r); const bg=STATUS_COLORS[st]||'#6B7280';
+  return '<tr>'+DB_COLS.map(c=>{
+    if(c.key==='status') return `<td><span class="status-pill dbp" style="background:${bg};color:${pillTextColor(bg)}">${st}</span></td>`;
+    const disp=dbCellDisp(c,r);
+    return `<td class="${c.num?'num':''}" title="${escapeHtml(String(disp))}">${c.num?disp:escapeHtml(disp)}</td>`;
+  }).join('')+'</tr>';
+}
+function dbBody(){
+  const tb=document.getElementById('dbTableBody'); if(!tb) return;
+  const rows=dbFilteredSorted(); const shown=rows.slice(0,1000);
+  tb.innerHTML = rows.length===0
+    ? `<tr><td colspan="${DB_COLS.length}" style="text-align:center;color:var(--bt-muted);padding:18px">No records match the current search / filters.</td></tr>`
+    : shown.map(dbRowHtml).join('');
   const cnt=document.getElementById('dbCount');
-  if(cnt) cnt.textContent=`Showing ${fmtNum(shown.length)} of ${fmtNum(rows.length)} filtered rows (${fmtNum(data.length)} in scope after global slicers).`;
+  if(cnt) cnt.textContent=`Showing ${fmtNum(shown.length)} of ${fmtNum(rows.length)} filtered rows (${fmtNum(DBX.data.length)} in scope after global slicers).`;
+}
+function dbSortX(key){ if(DBX.justResized){ DBX.justResized=false; return; }  // ignore the click that ends a resize drag
+  const col=DB_COLS.find(c=>c.key===key)||DB_COLS[0];
+  if(DBX.sort.key===key) DBX.sort.dir=DBX.sort.dir==='asc'?'desc':'asc'; else DBX.sort={key,dir:col.num||col.date?'desc':'asc'};
+  document.querySelectorAll('#dbTableWrap thead tr:first-child th').forEach(th=>{ const k=th.dataset.key;
+    th.classList.toggle('sorted',k===DBX.sort.key); const a=th.querySelector('.arw');
+    if(a) a.textContent = DBX.sort.key===k?(DBX.sort.dir==='asc'?'▲':'▼'):'↕'; });
+  dbBody();
+}
+function dbFilter(key,val){ DBX.filters[key]=val; dbBody(); }
+function dbInitResizers(){
+  document.querySelectorAll('#dbTableWrap .db-resizer').forEach(h=>{
+    h.addEventListener('mousedown', e=>{ e.preventDefault(); e.stopPropagation();
+      const key=h.dataset.key, col=document.querySelector(`#dbTableWrap col[data-key="${key}"]`);
+      const startX=e.clientX, startW=col.getBoundingClientRect().width;
+      const move=ev=>{ const w=Math.max(48,startW+(ev.clientX-startX)); col.style.width=w+'px'; DBX.widths[key]=w; DBX.justResized=true; };
+      const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.body.style.cursor='';
+        setTimeout(()=>{ DBX.justResized=false; },60); };  // clear guard shortly after (any sort-click fires first)
+      document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); document.body.style.cursor='col-resize';
+    });
+  });
+}
+function dbBuildSkeleton(){
+  const wrap=document.getElementById('dbTableWrap'); if(!wrap) return;
+  const cols=DB_COLS;
+  const colgroup='<colgroup>'+cols.map(c=>`<col data-key="${c.key}" style="width:${DBX.widths[c.key]||c.w}px">`).join('')+'</colgroup>';
+  const arw=c=> DBX.sort.key===c.key?(DBX.sort.dir==='asc'?'▲':'▼'):'↕';
+  const head='<tr>'+cols.map(c=>`<th data-key="${c.key}" class="${c.num?'num ':''}${DBX.sort.key===c.key?'sorted':''}" onclick="dbSortX('${c.key}')">${escapeHtml(c.label)}<span class="arw">${arw(c)}</span><span class="db-resizer" data-key="${c.key}"></span></th>`).join('')+'</tr>';
+  const filt='<tr class="db-filter-row">'+cols.map(c=>`<th class="${c.num?'num':''}"><input class="db-col-filter" type="text" placeholder="filter…" value="${escapeHtml(DBX.filters[c.key]||'')}" oninput="dbFilter('${c.key}',this.value)" onclick="event.stopPropagation()"></th>`).join('')+'</tr>';
+  wrap.innerHTML=`<table class="db-table">${colgroup}<thead>${head}${filt}</thead><tbody id="dbTableBody"></tbody></table>`;
+  DBX.built=true; dbInitResizers();
+}
+function renderTab7(data){
+  DBX.data=data;
+  if(!DBX.built || !document.getElementById('dbTableBody')) dbBuildSkeleton();
+  dbBody();
 }
 
 /* ==================== TAB 8 — ZONE PROGRESS (disposal funnel by zone) ==================== */

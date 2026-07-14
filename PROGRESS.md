@@ -586,3 +586,28 @@ Verified headless: **all 9 tabs, 0 console/page errors**; interaction test passe
 (4→8→305 rows / 260 leaves), mode-B switch (category-first), column sort, expand/collapse all; Zone
 Progress category-collapse and zone re-sort (Abbottabad first by verified qty). Still fully
 self-contained. Published to `docs/index.html`.
+
+## 20. Database-tab upgrades + tab reorder + payment-% fix (session 14)
+
+Client feedback pass. **(a) Zone Progress moved to the 2nd tab** (after Category Milestone Overview,
+before Overall Project Status) — nav-button reorder only; tab ids unchanged. **(b) Payment-%
+denominator corrected** (see §19 note): Σ Payment Rs. of lifted rows ÷ Σ Total Auction Value of those
+same lifted rows — Sukkur Fixed Assets now 95% (was a spurious 5142% from the old per-unit-price
+denominator). **(c) Database tab (tab7) overhauled:**
+- **Status pills readable** — pill text colour now chosen by background luminance, so the light-lime
+  *Partially Lifted* pill uses dark ink (was white-on-light, invisible); larger, bolder pill.
+- **Per-column filter row** under every header (type to narrow that column, case-insensitive contains
+  on the displayed value) + a global search box that matches all columns. Replaced the old 5 filter
+  drop-downs. Focus-preserving: only the tbody re-renders on keystroke (thead/inputs persist).
+- **Excel-style column resizing** — `table-layout:fixed` + a `<colgroup>`; drag the right edge of any
+  header to resize (min 48px); a `justResized` guard suppresses the sort-click that would otherwise
+  fire when a drag ends over the header.
+- **Auction Date now DD-MMM-YY** (e.g. `02-Nov-26`) via `fmtDMY` (also applied to the Aging Explorer
+  leaf dates); date column sorts chronologically (by parsed timestamp), not lexically.
+- **Payment (Rs.) column added** beside Auction Value. Sticky header + sticky filter row, truncating
+  cells with full-value hover title, capped at 1,000 rendered rows with a live count.
+
+Verified headless (9 tabs, 0 errors) + interaction test: nav order (Zone Progress 2nd), per-column
+Status filter → 15 Consignment rows, DD-MMM-YY dates, Payment column present & sortable (top
+6,192,486), column resize (region 120→200px), pill text = dark on light lime / white on purple. Still
+fully self-contained. Published to `docs/index.html`.
