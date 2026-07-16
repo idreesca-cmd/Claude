@@ -543,7 +543,22 @@ TAB56 = """        <section id="tab5" class="tab-pane">
             <div class="chart-card"><div class="chart-title">Top Bidders by Payment</div><div class="chart-sub">Highest total payment received (Rs.)</div><div style="position:relative;height:340px;"><canvas id="chartTopBidders"></canvas></div></div>
             <div class="chart-card"><div class="chart-title">Payment by Asset Category</div><div class="chart-sub">Total payment received per category (Rs.)</div><div style="position:relative;height:340px;"><canvas id="chartPayByCat"></canvas></div></div>
           </div>
-          <div class="chart-card"><div class="chart-title">Payments Received — by Winning Bidder</div><div class="chart-sub">Bidder, asset categories won, DD number(s), payment date(s) and total amount. Source records payments at asset-line level, so totals sum all of a bidder's lines — verify against physical DDs where an amount repeats.</div><div id="paymentsTableWrap" class="data-table-wrap"></div></div>
+          <div class="chart-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+              <div><div class="chart-title">Payments &amp; DD Explorer</div>
+                <div class="chart-sub">Drill into every payment from different angles. Each leaf is one asset-line payment (its DD number, payment date and amount) &mdash; rows are never merged. Click a row to expand, or sort any numeric column. Source records payments at asset-line level, so a repeated amount across lines may be the same physical DD &mdash; verify against the DD number.</div></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div class="sort-toggle" id="pdxMode">
+                  <button class="sort-btn active" data-mode="bidder">Bidder &rarr; Zone &rarr; Region &rarr; Category</button>
+                  <button class="sort-btn" data-mode="zone">Zone &rarr; Bidder &rarr; Region &rarr; Category</button>
+                  <button class="sort-btn" data-mode="cat">Category &rarr; Bidder &rarr; Zone &rarr; Region</button>
+                </div>
+                <button class="sort-btn" onclick="pdxExpandAll()">Expand all</button>
+                <button class="sort-btn" onclick="pdxCollapseAll()">Collapse all</button>
+              </div>
+            </div>
+            <div id="pdxTreeWrap" class="data-table-wrap" style="max-height:600px;margin-top:12px;"></div>
+          </div>
         </section>
         <section id="tab6" class="tab-pane">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
@@ -892,24 +907,82 @@ function renderTab5(data){
       data:{labels,datasets:[{label:'Payment Rs.',data:labels.map(k=>sum(g[k],r=>r[COL.payRs])),backgroundColor:BT.slate,borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'Rs '+fmtNum(ctx.parsed.y)}}},scales:{x:{grid:{display:false},ticks:{maxRotation:25,font:{size:10}}},y:{beginAtZero:true,grid:{color:'#F3F4F6'}}}}});
   } else noData('chartPayByCat');
-  // Payments are recorded at asset-line level in the source; aggregate to one row per
-  // winning bidder so the CEO sees "payments received from each bidder", not duplicated lines.
-  const wrap=document.getElementById('paymentsTableWrap');
-  const agg=new Map();
-  pays.forEach(r=>{ const b=clean(r[COL.bidder])||'(Unnamed bidder)';
-    const c=agg.get(b)||{bidder:b,total:0,lines:0,cats:new Set(),zones:new Set(),dds:new Set(),dates:new Set()};
-    c.total+=r[COL.payRs]||0; c.lines++;
-    if(clean(r[COL.assetCat])) c.cats.add(r[COL.assetCat]);
-    if(clean(r[COL.zone])) c.zones.add(r[COL.zone]);
-    if(clean(r[COL.ddNo])) c.dds.add(clean(r[COL.ddNo]));
-    if(clean(r[COL.payDate])) c.dates.add(clean(r[COL.payDate]));
-    agg.set(b,c); });
-  const rows=[...agg.values()].sort((a,b)=>b.total-a.total);
-  const j=s=>[...s].join(', ')||'—';
-  wrap.innerHTML = rows.length===0 ? '<div class="empty-state">No payment or DD records under the current filters.</div>' :
-    `<table class="data-table"><thead><tr><th>Winning Bidder</th><th>Zone(s)</th><th>Asset Categor(ies) Won</th><th>DD No(s).</th><th>Payment Date(s)</th><th style="text-align:right">Total Payment (Rs.)</th><th style="text-align:right">Lines</th></tr></thead><tbody>`+
-    rows.map(r=>`<tr><td>${escapeHtml(r.bidder)}</td><td>${escapeHtml(j(r.zones))}</td><td>${escapeHtml(j(r.cats))}</td><td>${escapeHtml(j(r.dds))}</td><td>${escapeHtml(j(r.dates))}</td><td style="text-align:right" class="pos">${fmtNum(r.total)}</td><td style="text-align:right">${fmtNum(r.lines)}</td></tr>`).join('')+
-    `</tbody></table>`;
+  renderPaymentsExplorer(data);
+}
+
+/* ==================== PAYMENTS & DD EXPLORER (drill-down tree) ==================== */
+const PDX_MODES={
+  bidder:{levels:['bidder','zone','region','cat']},
+  zone:{levels:['zone','bidder','region','cat']},
+  cat:{levels:['cat','bidder','zone','region']},
+};
+const PDX={mode:'bidder', sort:{key:'pay',dir:'desc'}, expanded:new Set(), tree:null, data:[], seq:0};
+function paymentLines(data){
+  const clean=s=>{ s=(s==null?'':s).toString().trim(); return (s===''||s==='0')?'':s; };
+  const out=[];
+  data.forEach(r=>{ const pay=+(r[COL.payRs]||0), dd=clean(r[COL.ddNo]);
+    if(pay<=0 && !dd) return;
+    out.push({ bidder:clean(r[COL.bidder])||'(Unnamed bidder)', zone:r[COL.zone]||'(Unspecified)',
+      region:r[COL.region]||'(Unspecified)', cat:r[COL.assetCat]||'(Unspecified)',
+      asset:(r[COL.assetName]||r[COL.assetNamePasted]||'(unnamed lot)'), dd:dd||'—', date:r[COL.payDate]||'', pay }); });
+  return out;
+}
+function pdxAggNew(){ return {lines:0,pay:0,dds:new Set(),maxDate:null}; }
+function pdxAggAdd(a,l){ a.lines++; a.pay+=l.pay; if(l.dd&&l.dd!=='—') a.dds.add(l.dd);
+  const d=parseDateJS(l.date); if(d&&(a.maxDate==null||d>a.maxDate)) a.maxDate=d; }
+function pdxBuild(lines,mode){
+  const keys=PDX_MODES[mode].levels;
+  const root={children:new Map(),agg:pdxAggNew(),leaves:[]};
+  lines.forEach(l=>{ pdxAggAdd(root.agg,l); let node=root;
+    keys.forEach((k,i)=>{ const key=(l[k]||'(Unspecified)'); let c=node.children.get(key);
+      if(!c){ c={name:key,level:i,_id:++PDX.seq,children:new Map(),agg:pdxAggNew(),leaves:[],last:(i===keys.length-1)}; node.children.set(key,c); }
+      pdxAggAdd(c.agg,l); node=c; });
+    node.leaves.push(l); });
+  return root;
+}
+function pdxSortCmp(){ const {key,dir}=PDX.sort; const s=dir==='asc'?1:-1;
+  const val=o=>{ const a=o.agg; if(a){ switch(key){case 'lines':return a.lines;case 'dds':return a.dds.size;default:return a.pay;} }
+    switch(key){case 'lines':return 1;case 'dds':return (o.dd&&o.dd!=='—')?1:0;default:return o.pay;} };
+  return (x,y)=> s*(val(x)-val(y));
+}
+function pdxNodeRow(node,depth){ const a=node.agg; const open=PDX.expanded.has(node._id); const pad=depth*16+4;
+  return `<tr class="agx-row" onclick="pdxToggle(${node._id})">`+
+    `<td><div class="agx-name" style="padding-left:${pad}px"><span class="agx-chev ${open?'open':''}">▶</span><span>${escapeHtml(node.name)}</span></div></td>`+
+    `<td class="num">${fmtNum(a.lines)}</td><td class="num">${fmtNum(a.dds.size)}</td>`+
+    `<td class="num">${fmtNum(a.pay)}</td><td class="num">${a.maxDate?fmtDMY(a.maxDate):'—'}</td><td>—</td></tr>`;
+}
+function pdxLeafRow(l,depth){ const pad=depth*16+4;
+  return `<tr class="agx-leaf">`+
+    `<td><div class="agx-name" style="padding-left:${pad}px"><span style="width:11px;flex:none"></span><span>${escapeHtml(l.asset)}</span></div></td>`+
+    `<td class="num">1</td><td class="num">${(l.dd&&l.dd!=='—')?1:0}</td>`+
+    `<td class="num">${fmtNum(l.pay)}</td><td class="num">${l.date?fmtDMY(l.date):'—'}</td><td>${escapeHtml(l.dd)}</td></tr>`;
+}
+function pdxWalk(node,depth,out){ const kids=[...node.children.values()].sort(pdxSortCmp());
+  kids.forEach(c=>{ out.push(pdxNodeRow(c,depth));
+    if(PDX.expanded.has(c._id)){ if(c.last) c.leaves.slice().sort(pdxSortCmp()).forEach(l=>out.push(pdxLeafRow(l,depth+1))); else pdxWalk(c,depth+1,out); } });
+}
+function pdxRender(){ const wrap=document.getElementById('pdxTreeWrap'); if(!wrap) return;
+  if(!PDX.tree || PDX.tree.agg.lines===0){ wrap.innerHTML='<div class="empty-state">No payment or DD records under the current filters.</div>'; return; }
+  const cols=[{k:'name',l:'Bidder / Zone / Region / Category / Lot',sort:false},{k:'lines',l:'Lines',num:true},{k:'dds',l:'Distinct DDs',num:true},{k:'pay',l:'Total Payment (Rs.)',num:true},{k:'date',l:'Latest Payment',num:true,sort:false},{k:'ddno',l:'DD No.',sort:false}];
+  const arw=k=> PDX.sort.key===k?(PDX.sort.dir==='asc'?'▲':'▼'):'↕';
+  const head='<tr>'+cols.map(c=>{ const sortable=c.sort!==false;
+    return `<th class="${c.num?'num ':''}${sortable?'sortable ':''}${PDX.sort.key===c.k?'sorted':''}" ${sortable?`onclick="pdxSortBy('${c.k}')"`:''}>${c.l}${sortable?`<span class="arw">${arw(c.k)}</span>`:''}</th>`; }).join('')+'</tr>';
+  const out=[]; pdxWalk(PDX.tree,0,out);
+  wrap.innerHTML=`<table class="agx-table"><thead>${head}</thead><tbody>${out.join('')}</tbody></table>`;
+}
+function pdxToggle(id){ if(PDX.expanded.has(id)) PDX.expanded.delete(id); else PDX.expanded.add(id); pdxRender(); }
+function pdxSortBy(k){ if(PDX.sort.key===k) PDX.sort.dir=PDX.sort.dir==='asc'?'desc':'asc'; else PDX.sort={key:k,dir:'desc'}; pdxRender(); }
+function pdxCollectIds(node,set){ node.children.forEach(c=>{ set.add(c._id); if(!c.last) pdxCollectIds(c,set); }); }
+function pdxExpandAll(){ const s=new Set(); if(PDX.tree) pdxCollectIds(PDX.tree,s); PDX.expanded=s; pdxRender(); }
+function pdxCollapseAll(){ PDX.expanded=new Set(); pdxRender(); }
+function pdxSetMode(m){ if(PDX.mode===m||!PDX_MODES[m]) return; PDX.mode=m; PDX.expanded=new Set(); PDX.seq=0;
+  PDX.tree=pdxBuild(paymentLines(PDX.data),PDX.mode); pdxRender();
+  document.querySelectorAll('#pdxMode .sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); }
+function renderPaymentsExplorer(data){ PDX.data=data; PDX.seq=0; PDX.expanded=new Set();
+  PDX.tree=pdxBuild(paymentLines(data),PDX.mode);
+  const mb=document.getElementById('pdxMode');
+  if(mb && !mb.__wired){ mb.__wired=true; mb.querySelectorAll('.sort-btn').forEach(b=>b.addEventListener('click',()=>pdxSetMode(b.dataset.mode))); }
+  pdxRender();
 }
 
 /* ==================== TAB 6 — ANOMALIES ==================== */

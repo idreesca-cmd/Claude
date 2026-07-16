@@ -611,3 +611,23 @@ Verified headless (9 tabs, 0 errors) + interaction test: nav order (Zone Progres
 Status filter → 15 Consignment rows, DD-MMM-YY dates, Payment column present & sortable (top
 6,192,486), column resize (region 120→200px), pill text = dark on light lime / white on purple. Still
 fully self-contained. Published to `docs/index.html`.
+
+## 21. Payments & DD Detail → multi-angle drill-down explorer (session 15)
+
+Converted the flat per-bidder table on the **Payments & DD Detail** tab into a collapsible drill-down
+tree (same pattern/CSS as the Aging Explorer), fed by the same payment-line set (rows with Payment Rs.
+> 0 or a DD number). **Three hierarchy modes** via toggle: **Bidder → Zone → Region → Category**,
+**Zone → Bidder → Region → Category**, **Category → Bidder → Zone → Region**. Each leaf is one
+asset-line payment (never merged) showing its **DD number, payment date (DD-MMM-YY) and amount**.
+Non-leaf levels roll up **payment lines, distinct DD count, total payment (Rs.), latest payment date**.
+Every numeric column sortable asc/desc (default total payment desc); Expand all / Collapse all; lazy
+child render. The KPIs and the Top-Bidders / Payment-by-Category charts above are unchanged.
+
+Surfaces DD-granularity honestly: e.g. Sain Abdul Hakim's 36 SUKKUR lines share **1** DD number
+(00002567) while his Karachi lines carry **0** recorded DDs — visible at a glance in the "Distinct DDs"
+column. Current data: 383 payment lines, 4 bidders, 22 distinct DDs.
+
+Verified headless (9 tabs, 0 errors) + interaction test: collapsed 4 bidders → expand-all 449 rows /
+383 leaves, mode switches (Zone-first → Abbottabad/Sukkur/Karachi/Peshawar; Category-first → Rice &
+Pulses/F&F/OB-Spices), leaf shows DD 00002567 · 02-Apr-26 · Rs 5,289,739, column sort. Still fully
+self-contained. Published to `docs/index.html`.

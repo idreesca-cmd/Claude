@@ -36,6 +36,7 @@ try {
     agxTop10: document.querySelectorAll('#agxTop10 tbody tr').length,
     zoneCards: document.querySelectorAll('#zpGrid .zone-card').length,
     zonePlaceholders: document.querySelectorAll('#zpGrid .zone-card.placeholder').length,
+    pdxRows: document.querySelectorAll('#pdxTreeWrap tbody tr').length,
   }));
   console.log('DIAG', JSON.stringify(diag, null, 2));
 
