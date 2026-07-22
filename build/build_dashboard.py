@@ -382,6 +382,30 @@ TAB1_CSS = """
  .zpct{font-weight:700;} .zpct-sub{font-size:9.5px;color:var(--bt-muted);}
  .zc-foot{font-size:10.5px;color:var(--bt-muted);margin-top:10px;line-height:1.5;}
  .znr{color:#9CA3AF;font-style:italic;}
+ /* Payment & Lifting tab — compact tiles + reconciliation tables */
+ .kpi-compact .kpi-card{padding:9px 12px;}
+ .kpi-compact .kpi-value{font-size:19px;margin-top:1px;}
+ .kpi-compact .kpi-label{font-size:9.5px;}
+ .kpi-compact .kpi-sub{font-size:9px;}
+ .recon-table{width:100%;border-collapse:collapse;font-size:12px;}
+ .recon-table th{background:var(--bt-charcoal);color:#fff;padding:7px 9px;text-align:right;font-weight:600;white-space:nowrap;}
+ .recon-table th:first-child{text-align:left;}
+ .recon-table td{padding:6px 9px;border-bottom:1px solid var(--bt-border);text-align:right;font-variant-numeric:tabular-nums;}
+ .recon-table td:first-child{text-align:left;color:#374151;}
+ .recon-table tbody tr:nth-child(even) td{background:#FAFBFC;}
+ .recon-table tfoot td{font-weight:700;background:#EDF2F1;border-top:2px solid var(--bt-green);}
+ .pl-slicer{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;}
+ .pl-chip{font-size:11px;font-weight:600;padding:4px 13px;border-radius:999px;border:1px solid var(--bt-border);background:#fff;color:var(--bt-muted);cursor:pointer;}
+ .pl-chip.active{background:var(--bt-green);color:#fff;border-color:var(--bt-green);}
+ .pl-detail{width:100%;border-collapse:collapse;font-size:11px;}
+ .pl-detail thead th{background:var(--bt-charcoal);color:#fff;padding:5px 7px;font-weight:600;text-align:right;white-space:nowrap;border:1px solid #3a4149;}
+ .pl-detail thead th:first-child{text-align:left;}
+ .pl-detail td{padding:3px 7px;border-bottom:1px solid #EDEFF2;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+ .pl-detail td:first-child{text-align:left;}
+ .pl-detail tr.pl-zone td{background:#DDEBE6;font-weight:700;color:var(--bt-slate);}
+ .pl-detail tr.pl-region td{background:#FBFCFD;color:#4B5563;}
+ .pl-detail tr.pl-region td:first-child{padding-left:22px;}
+ .pl-detail tfoot td{background:var(--bt-charcoal);color:#fff;font-weight:700;}
 """
 sub(r"</style>", lambda m: TAB0_CSS + TAB1_CSS + " #sourcePath{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}</style>", label="tab0/tab1 css")
 
@@ -496,18 +520,27 @@ sub(r'<section id="tab1" class="tab-pane">.*?</section>', lambda m: TAB1_SECTION
 
 # 5) tab4 — replace awaiting-card with real KPIs + table
 TAB4_SECTION = """<section id="tab4" class="tab-pane">
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4 kpi-compact">
             <div class="kpi-card"><div class="kpi-label">Payment Received (Rs.)</div><div id="kpi4Pay" class="kpi-value">—</div><div class="kpi-sub">Sum of Payment Rs.</div></div>
             <div class="kpi-card"><div class="kpi-label">Total Auction Value (Rs.)</div><div id="kpi4Val" class="kpi-value">—</div><div id="kpi4ValSub" class="kpi-sub">Billed value</div></div>
             <div class="kpi-card"><div class="kpi-label">Lifted Qty</div><div id="kpi4Lift" class="kpi-value">—</div><div id="kpi4LiftSub" class="kpi-sub">Units collected</div></div>
             <div class="kpi-card"><div class="kpi-label">Lifted KGs</div><div id="kpi4Kg" class="kpi-value">—</div><div class="kpi-sub">Weight collected</div></div>
             <div class="kpi-card"><div class="kpi-label">Balance Qty to Lift</div><div id="kpi4Bal" class="kpi-value">—</div><div class="kpi-sub">Outstanding</div></div>
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-            <div class="chart-card"><div class="chart-title">Payment Received by Zone</div><div class="chart-sub">Sum of Payment Rs. per zone (post-filter)</div><div style="position:relative;height:330px;"><canvas id="chartPayZone"></canvas></div></div>
-            <div class="chart-card"><div class="chart-title">Lifted vs Balance by Zone</div><div class="chart-sub">Units lifted vs outstanding balance per zone</div><div style="position:relative;height:330px;"><canvas id="chartLiftZone"></canvas></div></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="chart-card"><div class="chart-title">Category-wise Reconciliation — Value (Rs.)</div><div class="chart-sub">Auction Value (source col AE) vs Amount Lifted / Payment (col AH). Lifting Remaining = Auction Value &minus; Amount Lifted.</div><div id="reconValWrap" style="overflow-x:auto;"></div></div>
+            <div class="chart-card"><div class="chart-title">Category-wise Reconciliation — KGs</div><div class="chart-sub">Auction KGs (source col X) vs Lifted KGs (col AQ). Lifting Remaining = Auction KGs &minus; Lifted KGs.</div><div id="reconKgWrap" style="overflow-x:auto;"></div></div>
           </div>
-          <div class="chart-card"><div class="chart-title">Payment &amp; Lifting Detail — by Zone / Category</div><div class="chart-sub">Auction value, payment received, lifted &amp; balance quantities</div><div id="payLiftTableWrap" class="data-table-wrap"></div></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="chart-card"><div class="chart-title">Payment Received by Zone</div><div class="chart-sub">Sum of Payment Rs. per zone (post-filter)</div><div style="position:relative;height:290px;"><canvas id="chartPayZone"></canvas></div></div>
+            <div class="chart-card"><div class="chart-title">Lifted vs Balance by Zone</div><div class="chart-sub">Units lifted vs outstanding balance per zone</div><div style="position:relative;height:290px;"><canvas id="chartLiftZone"></canvas></div></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Payment &amp; Lifting Detail — by Zone / Region</div>
+            <div class="chart-sub">Value &amp; KGs reconciliation, each zone expanded to its regions. Use the chips to filter by asset category.</div>
+            <div id="plCatSlicer" class="pl-slicer"></div>
+            <div id="payLiftTableWrap" class="data-table-wrap"></div>
+          </div>
         </section>"""
 sub(r'<section id="tab4" class="tab-pane">.*?</section>', TAB4_SECTION,
     flags=re.DOTALL, label="tab4 section")
@@ -858,16 +891,53 @@ function renderTab4(data){
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:12,padding:12}}}, scales:{x:{stacked:true, grid:{display:false}}, y:{stacked:true, beginAtZero:true, grid:{color:'#F3F4F6'}}} } });
   } else noData('chartLiftZone');
 
-  const wrap = document.getElementById('payLiftTableWrap');
-  const map = new Map();
-  data.forEach(r=>{ const k=r[COL.zone]+'||'+r[COL.assetCat];
-    const c = map.get(k) || {zone:r[COL.zone], cat:r[COL.assetCat], val:0, pay:0, lift:0, bal:0};
-    c.val+=r[COL.auctValueTotal]||0; c.pay+=r[COL.payRs]||0; c.lift+=r[COL.liftedQty]||0; c.bal+=r[COL.balanceQty]||0;
-    map.set(k,c); });
-  const rows=[...map.values()].filter(r=>r.val||r.pay||r.lift||r.bal).sort((a,b)=>b.pay-a.pay);
-  wrap.innerHTML = rows.length===0 ? '<div class="empty-state">No payment or lifting activity under the current filters.</div>'
-    : `<table class="data-table"><thead><tr><th>Zone</th><th>Asset Category</th><th style="text-align:right">Auction Value (Rs.)</th><th style="text-align:right">Payment (Rs.)</th><th style="text-align:right">Lifted Qty</th><th style="text-align:right">Balance Qty</th></tr></thead><tbody>`+
-      rows.slice(0,500).map(r=>`<tr><td>${escapeHtml(r.zone)}</td><td>${escapeHtml(r.cat)}</td><td style="text-align:right">${fmtNum(r.val)}</td><td style="text-align:right" class="pos">${fmtNum(r.pay)}</td><td style="text-align:right">${fmtNum(r.lift)}</td><td style="text-align:right" class="${r.bal>0?'neg':''}">${fmtNum(r.bal)}</td></tr>`).join('')+`</tbody></table>`;
+  // Category-wise reconciliation tables (Value = AE vs AH ; KGs = X vs AQ)
+  renderReconTable(data,'reconValWrap',COL.auctValueTotal,COL.payRs,'Auction Value (Rs.)','Amt Lifted / Payment (Rs.)');
+  renderReconTable(data,'reconKgWrap',COL.auctQtyTotalKg,COL.liftedKg,'Auction KGs','Lifted KGs');
+  // Zone → Region detail with a per-category slicer
+  renderPlSlicer(data);
+  renderPlDetail(data);
+}
+function renderReconTable(data,wrapId,aucKey,liftKey,aucLbl,liftLbl){
+  const wrap=document.getElementById(wrapId); if(!wrap) return;
+  const g=groupBy(data,COL.assetCat); const cats=Object.keys(g).sort();
+  const cell=(a,l)=>{ const rem=a-l, p=a>0?rem/a:0;
+    return `<td>${fmtNum(a)}</td><td>${fmtNum(l)}</td><td>${fmtNum(rem)}</td><td>${(p*100).toFixed(1)}%</td>`; };
+  const body=cats.map(c=>`<tr><td>${escapeHtml(c)}</td>${cell(sum(g[c],r=>+(r[aucKey]||0)),sum(g[c],r=>+(r[liftKey]||0)))}</tr>`).join('');
+  const A=sum(data,r=>+(r[aucKey]||0)), L=sum(data,r=>+(r[liftKey]||0));
+  wrap.innerHTML = cats.length===0 ? '<div class="empty-state">No data under the current filters.</div>' :
+    `<table class="recon-table"><thead><tr><th>Asset Category</th><th>${aucLbl}</th><th>${liftLbl}</th><th>Lifting Remaining</th><th>Remaining %</th></tr></thead>`+
+    `<tbody>${body}</tbody><tfoot><tr><td>GRAND TOTAL</td>${cell(A,L)}</tr></tfoot></table>`;
+}
+function _plc(){ return window.__plCat||'All'; }
+function renderPlSlicer(data){
+  const el=document.getElementById('plCatSlicer'); if(!el) return;
+  const cats=['All',...uniqueSorted(data.map(r=>r[COL.assetCat]))];
+  if(_plc()!=='All' && !cats.includes(_plc())) window.__plCat='All';
+  el.innerHTML=cats.map(c=>`<button class="pl-chip ${_plc()===c?'active':''}" data-c="${escapeHtml(c)}" onclick="plSetCat(this.dataset.c)">${escapeHtml(c)}</button>`).join('');
+}
+function plSetCat(c){ window.__plCat=c;
+  document.querySelectorAll('#plCatSlicer .pl-chip').forEach(b=>b.classList.toggle('active',b.dataset.c===c));
+  renderPlDetail(getFiltered()); }
+function renderPlDetail(data){
+  const wrap=document.getElementById('payLiftTableWrap'); if(!wrap) return;
+  const cat=_plc(); const rows=(cat==='All')?data:data.filter(r=>r[COL.assetCat]===cat);
+  const m=(arr,k)=>sum(arr,r=>+(r[k]||0));
+  const cells=(av,lv,ak,lk)=>{ const rV=av-lv,pV=av>0?rV/av:0,rK=ak-lk,pK=ak>0?rK/ak:0;
+    return `<td>${fmtNum(av)}</td><td>${fmtNum(lv)}</td><td>${fmtNum(rV)}</td><td>${(pV*100).toFixed(1)}%</td>`+
+           `<td>${fmtNum(ak)}</td><td>${fmtNum(lk)}</td><td>${fmtNum(rK)}</td><td>${(pK*100).toFixed(1)}%</td>`; };
+  const grp=(arr,k)=>{const o={};arr.forEach(r=>{const key=r[k]||'(Unspecified)';(o[key]=o[key]||[]).push(r);});return o;};
+  const gz=grp(rows,COL.zone); let body='';
+  Object.keys(gz).sort().forEach(z=>{ const zr=gz[z];
+    body+=`<tr class="pl-zone"><td>${escapeHtml(z)}</td>${cells(m(zr,COL.auctValueTotal),m(zr,COL.payRs),m(zr,COL.auctQtyTotalKg),m(zr,COL.liftedKg))}</tr>`;
+    const gr=grp(zr,COL.region); Object.keys(gr).sort().forEach(rg=>{ const rr=gr[rg];
+      body+=`<tr class="pl-region"><td>${escapeHtml(rg)}</td>${cells(m(rr,COL.auctValueTotal),m(rr,COL.payRs),m(rr,COL.auctQtyTotalKg),m(rr,COL.liftedKg))}</tr>`; });
+  });
+  wrap.innerHTML = rows.length===0 ? '<div class="empty-state">No activity under the current filters.</div>' :
+    `<table class="pl-detail"><thead><tr><th rowspan="2">Zone / Region</th><th colspan="4">Value (Rs.)</th><th colspan="4">Weight (KGs)</th></tr>`+
+    `<tr><th>Auction</th><th>Amt Lifted</th><th>Remaining</th><th>Rem. %</th><th>Auction</th><th>Lifted</th><th>Remaining</th><th>Rem. %</th></tr></thead>`+
+    `<tbody>${body}</tbody>`+
+    `<tfoot><tr><td>GRAND TOTAL</td>${cells(m(rows,COL.auctValueTotal),m(rows,COL.payRs),m(rows,COL.auctQtyTotalKg),m(rows,COL.liftedKg))}</tr></tfoot></table>`;
 }
 
 /* ============ TAB 3 — auction pricing & bidder coverage (was "awaiting") ============ */

@@ -631,3 +631,21 @@ Verified headless (9 tabs, 0 errors) + interaction test: collapsed 4 bidders →
 383 leaves, mode switches (Zone-first → Abbottabad/Sukkur/Karachi/Peshawar; Category-first → Rice &
 Pulses/F&F/OB-Spices), leaf shows DD 00002567 · 02-Apr-26 · Rs 5,289,739, column sort. Still fully
 self-contained. Published to `docs/index.html`.
+
+## 22. Payment & Lifting tab — reconciliation tables + Zone/Region detail (session 16)
+
+Reworked the web dashboard's **Payment & Lifting** tab (tab4) per client mock-ups:
+- **Compact KPI strip** (`.kpi-compact`) — shrank the 5 tiles to make room for the tables.
+- **Two category-wise reconciliation tables**, mapped to the exact source columns the client named:
+  **Value (Rs.)** = Auction Value (col AE, `auctValueTotal`) vs Amount Lifted / Payment (col AH,
+  `payRs`), Lifting Remaining = AE − AH, Remaining %; **KGs** = Auction KGs (col X,
+  `auctQtyTotalKg`) vs Lifted KGs (col AQ, `liftedKg`), Remaining = X − AQ, Remaining %. One row per
+  Assets Category + GRAND TOTAL (ties to the KPIs).
+- **"Payment & Lifting Detail — by Zone / Region"** — replaced the old Zone/Category table with a
+  compact Zone→Region reconciliation (Value + KGs column groups, two-tier header). **Per-category
+  slicer chips** (`plSetCat`, local `window.__plCat`) filter just this table; zone rows and region
+  rows are shaded different light greens (`.pl-zone` / `.pl-region`, indented) for readability.
+- Kept the two zone charts. Recon tables scroll horizontally inside their half-width cards.
+
+Verified headless (0 errors) + interaction test: 6-category recon tables, 7 slicer chips, 4 zone rows
++ 22 region rows, chip filter narrows the detail (ERP IT → 1 zone). Published to `docs/index.html`.
