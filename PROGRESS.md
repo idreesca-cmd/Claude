@@ -649,3 +649,11 @@ Reworked the web dashboard's **Payment & Lifting** tab (tab4) per client mock-up
 
 Verified headless (0 errors) + interaction test: 6-category recon tables, 7 slicer chips, 4 zone rows
 + 22 region rows, chip filter narrows the detail (ERP IT → 1 zone). Published to `docs/index.html`.
+
+## 23. Zone Progress — drop class roll-up rows (session 17)
+
+Per client feedback the bold **Assets Class roll-up total rows** on the Zone Progress cards were
+distorting readability, so they're removed. Each class is now a plain light group label
+(`.zf-classlabel`, no figures/bars) with only the individual **category** rows carrying numbers.
+The Verified → Auctioned → Lifted → Paid funnel strip and footnotes are unchanged. Verified headless
+(0 errors): class-total rows = 0, class labels present, category rows intact. Published to docs/index.html.

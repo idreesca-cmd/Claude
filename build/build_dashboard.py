@@ -375,6 +375,7 @@ TAB1_CSS = """
  .zf-table td.num{text-align:right;font-variant-numeric:tabular-nums;color:#374151;}
  .zf-class{cursor:pointer;background:#F8FAFB;font-weight:700;color:var(--bt-slate);}
  .zf-class:hover{background:#F1F5F9;}
+ .zf-table tr.zf-classlabel td{background:#EEF4F2;font-weight:700;color:var(--bt-slate);font-size:10.5px;padding:4px 6px;text-transform:uppercase;letter-spacing:.02em;}
  .zf-cat td:first-child{padding-left:22px;color:#4B5563;}
  .zf-chev{display:inline-block;width:10px;font-size:9px;color:var(--bt-muted);}
  .zbar{height:7px;background:#EDEFF2;border-radius:4px;overflow:hidden;margin-top:3px;}
@@ -1583,16 +1584,13 @@ function zoneCard(zoneName, allRows){
   [...byClass.keys()].forEach(c=>{ if(!orderedClasses.includes(c)) orderedClasses.push(c); });
   let tbody='';
   orderedClasses.forEach(cl=>{
-    const catMap=byClass.get(cl); const clRows=[...catMap.values()].flat();
-    const key=zoneName+'||'+cl, id=++ZP.seq; ZP.keymap[id]=key;
-    const open=!ZP.collapsed.has(key);
-    tbody+=zRow(cl,clRows,true,id,open);
-    if(open){
-      const gsubs=((GROUPS.find(g=>g.main===cl)||{}).subs)||[];
-      const orderedCats=[]; gsubs.forEach(s=>{ if(catMap.has(s)) orderedCats.push(s); });
-      [...catMap.keys()].forEach(c=>{ if(!orderedCats.includes(c)) orderedCats.push(c); });
-      orderedCats.forEach(ct=> tbody+=zRow(ct,catMap.get(ct),false,0,false));
-    }
+    const catMap=byClass.get(cl);
+    // class name as a plain group label (no roll-up totals — removed per client feedback)
+    tbody+=`<tr class="zf-classlabel"><td colspan="5">${escapeHtml(cl)}</td></tr>`;
+    const gsubs=((GROUPS.find(g=>g.main===cl)||{}).subs)||[];
+    const orderedCats=[]; gsubs.forEach(s=>{ if(catMap.has(s)) orderedCats.push(s); });
+    [...catMap.keys()].forEach(c=>{ if(!orderedCats.includes(c)) orderedCats.push(c); });
+    orderedCats.forEach(ct=> tbody+=zRow(ct,catMap.get(ct),false,0,false));
   });
   const table=`<table class="zf-table"><thead><tr><th>Assets Class / Category</th><th>Verified</th><th>Auctioned</th><th>Lifted</th><th>Payment</th></tr></thead><tbody>${tbody}</tbody></table>`;
   const footBits=[`${fmtNum(f.n)} lot lines · ${fmtNum(f.liftedRows)} lifted lot(s)`];
