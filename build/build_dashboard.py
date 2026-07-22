@@ -388,6 +388,7 @@ TAB1_CSS = """
  .kpi-compact .kpi-label{font-size:9.5px;}
  .kpi-compact .kpi-sub{font-size:9px;}
  .recon-table{width:100%;border-collapse:collapse;font-size:12px;}
+ .recon-table thead{position:sticky;top:0;z-index:2;}
  .recon-table th{background:var(--bt-charcoal);color:#fff;padding:7px 9px;text-align:right;font-weight:600;white-space:nowrap;}
  .recon-table th:first-child{text-align:left;}
  .recon-table td{padding:6px 9px;border-bottom:1px solid var(--bt-border);text-align:right;font-variant-numeric:tabular-nums;}
@@ -398,6 +399,7 @@ TAB1_CSS = """
  .pl-chip{font-size:11px;font-weight:600;padding:4px 13px;border-radius:999px;border:1px solid var(--bt-border);background:#fff;color:var(--bt-muted);cursor:pointer;}
  .pl-chip.active{background:var(--bt-green);color:#fff;border-color:var(--bt-green);}
  .pl-detail{width:100%;border-collapse:collapse;font-size:11px;}
+ .pl-detail thead{position:sticky;top:0;z-index:3;}
  .pl-detail thead th{background:var(--bt-charcoal);color:#fff;padding:5px 7px;font-weight:600;text-align:right;white-space:nowrap;border:1px solid #3a4149;}
  .pl-detail thead th:first-child{text-align:left;}
  .pl-detail td{padding:3px 7px;border-bottom:1px solid #EDEFF2;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
