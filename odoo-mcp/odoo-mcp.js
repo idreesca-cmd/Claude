@@ -1,0 +1,413 @@
+#!/usr/bin/env node
+/*
+ * Odoo MCP connector — single-file, zero-dependency edition.
+ *
+ * Connects Claude to an Odoo instance via Odoo's external JSON-RPC API.
+ * Needs only Node.js 18+ (uses the built-in fetch). No npm install required.
+ *
+ * Two ways to run it:
+ *   1) As a Claude connector (default): Claude launches it and talks over stdio.
+ *   2) Discovery / health check:  node odoo-mcp.js --discover
+ *      (prints server version, database list, and confirms your login)
+ *
+ * Configuration comes from environment variables (never hard-code secrets):
+ *   ODOO_URL       e.g. https://qacoatwork.com
+ *   ODOO_DB        database name
+ *   ODOO_USERNAME  login (email)
+ *   ODOO_API_KEY   API key (or password)
+ *   ODOO_TIMEOUT   optional request timeout in ms (default 30000)
+ */
+
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Odoo JSON-RPC client
+// ---------------------------------------------------------------------------
+
+function cfg() {
+  const url = (process.env.ODOO_URL || "").replace(/\/+$/, "");
+  const db = process.env.ODOO_DB;
+  const username = process.env.ODOO_USERNAME;
+  const apiKey = process.env.ODOO_API_KEY || process.env.ODOO_PASSWORD;
+  const timeout = process.env.ODOO_TIMEOUT ? Number(process.env.ODOO_TIMEOUT) : 30000;
+  return { url, db, username, apiKey, timeout };
+}
+
+let _uid = null;
+
+async function jsonrpc(url, timeout, service, method, args) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeout);
+  let resp;
+  try {
+    resp = await fetch(`${url}/jsonrpc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "call",
+        params: { service, method, args },
+        id: Math.floor(Math.random() * 1e9),
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === "AbortError") throw new Error(`Request to Odoo timed out after ${timeout}ms`);
+    throw new Error(`Network error contacting Odoo at ${url}: ${err.message}`);
+  } finally {
+    clearTimeout(t);
+  }
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`HTTP ${resp.status} from Odoo: ${text.slice(0, 500)}`);
+  }
+  const json = await resp.json();
+  if (json.error) {
+    const data = json.error.data || {};
+    throw new Error(data.message || json.error.message || "Unknown Odoo error");
+  }
+  return json.result;
+}
+
+async function version() {
+  const { url, timeout } = cfg();
+  return jsonrpc(url, timeout, "common", "version", []);
+}
+
+async function authenticate() {
+  if (_uid) return _uid;
+  const { url, db, username, apiKey, timeout } = cfg();
+  if (!url) throw new Error("Missing ODOO_URL");
+  if (!db) throw new Error("Missing ODOO_DB");
+  if (!username) throw new Error("Missing ODOO_USERNAME");
+  if (!apiKey) throw new Error("Missing ODOO_API_KEY");
+  const uid = await jsonrpc(url, timeout, "common", "authenticate", [db, username, apiKey, {}]);
+  if (!uid) throw new Error("Authentication failed — check ODOO_DB, ODOO_USERNAME, and ODOO_API_KEY.");
+  _uid = uid;
+  return uid;
+}
+
+async function execute(model, method, args = [], kwargs = {}) {
+  const { url, db, apiKey, timeout } = cfg();
+  const uid = await authenticate();
+  return jsonrpc(url, timeout, "object", "execute_kw", [db, uid, apiKey, model, method, args, kwargs]);
+}
+
+// ---------------------------------------------------------------------------
+// MCP tools
+// ---------------------------------------------------------------------------
+
+const TOOLS = [
+  {
+    name: "odoo_search_read",
+    description:
+      "Search Odoo records and return chosen fields. Use an Odoo domain (list of triples, " +
+      'e.g. [["customer_rank",">",0]]). Empty domain [] returns all.',
+    inputSchema: {
+      type: "object",
+      properties: {
+        model: { type: "string", description: "Model, e.g. res.partner, sale.order, account.move" },
+        domain: { type: "array", default: [] },
+        fields: { type: "array", items: { type: "string" } },
+        limit: { type: "integer", default: 50 },
+        offset: { type: "integer", default: 0 },
+        order: { type: "string" },
+      },
+      required: ["model"],
+    },
+    run: (a) => {
+      const kwargs = {};
+      if (a.fields) kwargs.fields = a.fields;
+      kwargs.limit = a.limit ?? 50;
+      kwargs.offset = a.offset ?? 0;
+      if (a.order) kwargs.order = a.order;
+      return execute(a.model, "search_read", [a.domain ?? []], kwargs);
+    },
+  },
+  {
+    name: "odoo_search_count",
+    description: "Count Odoo records matching a domain.",
+    inputSchema: {
+      type: "object",
+      properties: { model: { type: "string" }, domain: { type: "array", default: [] } },
+      required: ["model"],
+    },
+    run: (a) => execute(a.model, "search_count", [a.domain ?? []]),
+  },
+  {
+    name: "odoo_read",
+    description: "Read specific Odoo records by their IDs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        model: { type: "string" },
+        ids: { type: "array", items: { type: "integer" } },
+        fields: { type: "array", items: { type: "string" } },
+      },
+      required: ["model", "ids"],
+    },
+    run: (a) => execute(a.model, "read", [a.ids], a.fields ? { fields: a.fields } : {}),
+  },
+  {
+    name: "odoo_create",
+    description: "Create a new Odoo record. Returns the new record ID.",
+    inputSchema: {
+      type: "object",
+      properties: { model: { type: "string" }, values: { type: "object" } },
+      required: ["model", "values"],
+    },
+    run: (a) => execute(a.model, "create", [a.values]),
+  },
+  {
+    name: "odoo_write",
+    description: "Update existing Odoo records. Returns true on success.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        model: { type: "string" },
+        ids: { type: "array", items: { type: "integer" } },
+        values: { type: "object" },
+      },
+      required: ["model", "ids", "values"],
+    },
+    run: (a) => execute(a.model, "write", [a.ids, a.values]),
+  },
+  {
+    name: "odoo_unlink",
+    description: "Delete Odoo records by ID. Returns true on success. Use with care.",
+    inputSchema: {
+      type: "object",
+      properties: { model: { type: "string" }, ids: { type: "array", items: { type: "integer" } } },
+      required: ["model", "ids"],
+    },
+    run: (a) => execute(a.model, "unlink", [a.ids]),
+  },
+  {
+    name: "odoo_name_search",
+    description: "Fuzzy lookup by display name. Returns [id, display_name] pairs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        model: { type: "string" },
+        name: { type: "string" },
+        limit: { type: "integer", default: 20 },
+      },
+      required: ["model", "name"],
+    },
+    run: (a) => execute(a.model, "name_search", [a.name], { limit: a.limit ?? 20 }),
+  },
+  {
+    name: "odoo_fields_get",
+    description: "Describe a model's fields (name, type, help, required, relation, selection).",
+    inputSchema: {
+      type: "object",
+      properties: { model: { type: "string" }, attributes: { type: "array", items: { type: "string" } } },
+      required: ["model"],
+    },
+    run: (a) =>
+      execute(a.model, "fields_get", [], {
+        attributes: a.attributes || ["string", "type", "help", "required", "relation", "selection"],
+      }),
+  },
+  {
+    name: "odoo_list_models",
+    description: "List available Odoo models (technical name + label). Optional substring filter.",
+    inputSchema: {
+      type: "object",
+      properties: { filter: { type: "string" }, limit: { type: "integer", default: 200 } },
+    },
+    run: (a) => {
+      const domain = a.filter
+        ? ["|", ["model", "ilike", a.filter], ["name", "ilike", a.filter]]
+        : [];
+      return execute("ir.model", "search_read", [domain], {
+        fields: ["model", "name"],
+        limit: a.limit ?? 200,
+        order: "model",
+      });
+    },
+  },
+  {
+    name: "odoo_execute",
+    description: "Escape hatch: call any model method via execute_kw (model, method, args, kwargs).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        model: { type: "string" },
+        method: { type: "string" },
+        args: { type: "array", default: [] },
+        kwargs: { type: "object", default: {} },
+      },
+      required: ["model", "method"],
+    },
+    run: (a) => execute(a.model, a.method, a.args ?? [], a.kwargs ?? {}),
+  },
+  {
+    name: "odoo_version",
+    description: "Return Odoo server version and verify connectivity (no auth required).",
+    inputSchema: { type: "object", properties: {} },
+    run: () => version(),
+  },
+  {
+    name: "odoo_whoami",
+    description: "Authenticate and return the current user's id, name, login, and company.",
+    inputSchema: { type: "object", properties: {} },
+    run: async () => {
+      const uid = await authenticate();
+      const [user] = await execute("res.users", "read", [[uid]], {
+        fields: ["name", "login", "company_id", "email"],
+      });
+      return { uid, ...user };
+    },
+  },
+];
+
+const TOOL_MAP = new Map(TOOLS.map((t) => [t.name, t]));
+const TOOL_LISTING = TOOLS.map(({ run, ...rest }) => rest);
+
+async function callTool(name, args) {
+  const tool = TOOL_MAP.get(name);
+  if (!tool) {
+    return { isError: true, content: [{ type: "text", text: `Unknown tool: ${name}` }] };
+  }
+  try {
+    const result = await tool.run(args || {});
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  } catch (err) {
+    return { isError: true, content: [{ type: "text", text: `Odoo error: ${err.message}` }] };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Minimal MCP stdio server (newline-delimited JSON-RPC 2.0)
+// ---------------------------------------------------------------------------
+
+function send(msg) {
+  process.stdout.write(JSON.stringify(msg) + "\n");
+}
+
+async function handle(msg) {
+  const { id, method, params } = msg;
+
+  // Notifications (no id) require no response.
+  if (id === undefined || id === null) return;
+
+  try {
+    if (method === "initialize") {
+      return send({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: (params && params.protocolVersion) || "2024-11-05",
+          capabilities: { tools: {} },
+          serverInfo: { name: "odoo-mcp", version: "1.0.0" },
+        },
+      });
+    }
+    if (method === "ping") {
+      return send({ jsonrpc: "2.0", id, result: {} });
+    }
+    if (method === "tools/list") {
+      return send({ jsonrpc: "2.0", id, result: { tools: TOOL_LISTING } });
+    }
+    if (method === "tools/call") {
+      const result = await callTool(params && params.name, params && params.arguments);
+      return send({ jsonrpc: "2.0", id, result });
+    }
+    // Unknown method.
+    send({ jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } });
+  } catch (err) {
+    send({ jsonrpc: "2.0", id, error: { code: -32603, message: String(err && err.message || err) } });
+  }
+}
+
+function runServer() {
+  let buffer = "";
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    buffer += chunk;
+    let idx;
+    while ((idx = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, idx).trim();
+      buffer = buffer.slice(idx + 1);
+      if (!line) continue;
+      let msg;
+      try {
+        msg = JSON.parse(line);
+      } catch {
+        continue; // ignore malformed lines
+      }
+      handle(msg);
+    }
+  });
+  process.stdin.on("end", () => process.exit(0));
+
+  const { url, db } = cfg();
+  process.stderr.write(
+    `[odoo-mcp] ready — ${TOOLS.length} tools for ${url || "(ODOO_URL unset)"} (db: ${db || "unset"})\n`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Discovery / health check mode
+// ---------------------------------------------------------------------------
+
+async function runDiscover() {
+  const { url, db, username, apiKey } = cfg();
+  if (!url) {
+    console.error("Set at least ODOO_URL (ideally ODOO_DB, ODOO_USERNAME, ODOO_API_KEY too).");
+    process.exit(1);
+  }
+  console.log(`Odoo URL: ${url}`);
+
+  try {
+    const v = await version();
+    console.log("Server version:", JSON.stringify(v));
+  } catch (err) {
+    console.error("Could not reach Odoo:", err.message);
+    process.exit(2);
+  }
+
+  // Try to list databases (often disabled on hosted Odoo).
+  try {
+    const resp = await fetch(`${url}/web/database/list`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "call", params: {} }),
+    });
+    const j = await resp.json();
+    if (j.result) {
+      console.log("Databases on this server:", j.result);
+      if (!db) console.log("-> Pick one above and use it as ODOO_DB.");
+    } else throw new Error("no list");
+  } catch {
+    console.log("Database listing is disabled on this server (normal for hosted Odoo).");
+    if (!db) console.log('-> Set ODOO_DB explicitly (for Odoo Online it is usually your subdomain).');
+  }
+
+  if (!db || !username || !apiKey) {
+    console.log("\nSet ODOO_DB, ODOO_USERNAME and ODOO_API_KEY to test the login.");
+    return;
+  }
+  try {
+    const uid = await authenticate();
+    const [me] = await execute("res.users", "read", [[uid]], { fields: ["name", "login", "company_id"] });
+    console.log(`\nSUCCESS: authenticated as uid=${uid}: ${me.name} <${me.login}> (company: ${JSON.stringify(me.company_id)})`);
+    console.log("Your connector is correctly configured.");
+  } catch (err) {
+    console.error("\nFAILED to authenticate:", err.message);
+    console.error("Check ODOO_DB, ODOO_USERNAME (login/email), and ODOO_API_KEY.");
+    process.exit(3);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+if (process.argv.includes("--discover")) {
+  runDiscover().catch((err) => {
+    console.error("Unexpected error:", err);
+    process.exit(1);
+  });
+} else {
+  runServer();
+}
