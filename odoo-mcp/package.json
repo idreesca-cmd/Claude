@@ -1,0 +1,22 @@
+{
+  "name": "odoo-mcp",
+  "version": "1.0.0",
+  "description": "MCP connector exposing an Odoo instance to Claude via the Odoo external JSON-RPC API.",
+  "type": "module",
+  "bin": {
+    "odoo-mcp": "src/index.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "discover": "node src/discover.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "keywords": ["mcp", "odoo", "claude", "connector", "jsonrpc"],
+  "license": "MIT"
+}
