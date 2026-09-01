@@ -459,6 +459,40 @@ async function runCall(a) {
 }
 
 // ---------------------------------------------------------------------------
+// Base64 relay mode:  node odoo-mcp.js callb64 <base64>
+// The base64 decodes to JSON {model, method, args?, kwargs?}. Base64 contains
+// only safe characters, so the command survives Windows Command Prompt intact
+// even when the query uses >, <, |, or quotes. This is the mode Claude hands you.
+// ---------------------------------------------------------------------------
+
+async function runCallB64(a) {
+  const b64 = a[0];
+  if (!b64) {
+    console.error("Usage: node odoo-mcp.js callb64 <base64-encoded JSON>");
+    process.exit(2);
+  }
+  let req;
+  try {
+    req = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+  } catch (err) {
+    console.error("Could not decode/parse the request:", err.message);
+    process.exit(2);
+  }
+  const { model, method, args = [], kwargs = {} } = req || {};
+  if (!model || !method) {
+    console.error("Decoded request must include at least { model, method }.");
+    process.exit(2);
+  }
+  try {
+    const result = await execute(model, method, args, kwargs);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (err) {
+    console.error("ERROR:", err.message);
+    process.exit(1);
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 const _argv = process.argv.slice(2);
 if (_argv.includes("--discover")) {
@@ -468,6 +502,11 @@ if (_argv.includes("--discover")) {
   });
 } else if (_argv[0] === "call") {
   runCall(_argv.slice(1)).catch((err) => {
+    console.error("Unexpected error:", err);
+    process.exit(1);
+  });
+} else if (_argv[0] === "callb64") {
+  runCallB64(_argv.slice(1)).catch((err) => {
     console.error("Unexpected error:", err);
     process.exit(1);
   });
