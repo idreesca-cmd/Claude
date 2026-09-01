@@ -430,9 +430,44 @@ async function runDiscover() {
 }
 
 // ---------------------------------------------------------------------------
+// Relay CLI mode:  node odoo-mcp.js call <model> <method> [jsonArgs] [jsonKwargs]
+// Lets you run a single Odoo call from the command line and print the result.
+// Example: node odoo-mcp.js call res.partner search_count "[[]]"
+// ---------------------------------------------------------------------------
 
-if (process.argv.includes("--discover")) {
+async function runCall(a) {
+  const [model, method, argsJson = "[]", kwargsJson = "{}"] = a;
+  if (!model || !method) {
+    console.error('Usage: node odoo-mcp.js call <model> <method> [jsonArgs] [jsonKwargs]');
+    process.exit(2);
+  }
+  let args, kwargs;
+  try {
+    args = JSON.parse(argsJson);
+    kwargs = JSON.parse(kwargsJson);
+  } catch (err) {
+    console.error("Could not parse the JSON arguments:", err.message);
+    process.exit(2);
+  }
+  try {
+    const result = await execute(model, method, args, kwargs);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (err) {
+    console.error("ERROR:", err.message);
+    process.exit(1);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+const _argv = process.argv.slice(2);
+if (_argv.includes("--discover")) {
   runDiscover().catch((err) => {
+    console.error("Unexpected error:", err);
+    process.exit(1);
+  });
+} else if (_argv[0] === "call") {
+  runCall(_argv.slice(1)).catch((err) => {
     console.error("Unexpected error:", err);
     process.exit(1);
   });
