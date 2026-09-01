@@ -12,7 +12,7 @@
  *
  * Configuration comes from environment variables (never hard-code secrets):
  *   ODOO_URL       e.g. https://qacoatwork.com
- *   ODOO_DB        database name
+ *   ODOO_DB        database name (e.g. bakertilly)
  *   ODOO_USERNAME  login (email)
  *   ODOO_API_KEY   API key (or password)
  *   ODOO_TIMEOUT   optional request timeout in ms (default 30000)
@@ -211,20 +211,48 @@ const TOOLS = [
   },
   {
     name: "odoo_list_models",
-    description: "List available Odoo models (technical name + label). Optional substring filter.",
+    description:
+      "List available Odoo models via menu actions (label + technical res_model). Optional " +
+      "substring filter. Uses ir.actions.act_window because some accounts cannot read ir.model.",
     inputSchema: {
       type: "object",
-      properties: { filter: { type: "string" }, limit: { type: "integer", default: 200 } },
+      properties: { filter: { type: "string" }, limit: { type: "integer", default: 300 } },
     },
     run: (a) => {
       const domain = a.filter
-        ? ["|", ["model", "ilike", a.filter], ["name", "ilike", a.filter]]
+        ? ["|", ["res_model", "ilike", a.filter], ["name", "ilike", a.filter]]
         : [];
-      return execute("ir.model", "search_read", [domain], {
-        fields: ["model", "name"],
-        limit: a.limit ?? 200,
-        order: "model",
+      return execute("ir.actions.act_window", "search_read", [domain], {
+        fields: ["name", "res_model"],
+        limit: a.limit ?? 300,
+        order: "res_model",
       });
+    },
+  },
+  {
+    name: "odoo_post_note",
+    description:
+      "Post an HTML note to a record's chatter. Handles the Odoo 17 quirk where message_post " +
+      "escapes HTML: posts plain text first, then writes the real markup to mail.message.body. " +
+      "Chatter notes can notify real staff — confirm before posting.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        model: { type: "string" },
+        id: { type: "integer", description: "Record ID to post the note on." },
+        html: { type: "string", description: "Note body (HTML allowed)." },
+      },
+      required: ["model", "id", "html"],
+    },
+    run: async (a) => {
+      const plain = a.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const msgId = await execute(a.model, "message_post", [[a.id]], {
+        body: plain,
+        message_type: "comment",
+        subtype_xmlid: "mail.mt_comment",
+      });
+      await execute("mail.message", "write", [[msgId], { body: a.html }]);
+      return { message_id: msgId };
     },
   },
   {
@@ -382,7 +410,7 @@ async function runDiscover() {
     } else throw new Error("no list");
   } catch {
     console.log("Database listing is disabled on this server (normal for hosted Odoo).");
-    if (!db) console.log('-> Set ODOO_DB explicitly (for Odoo Online it is usually your subdomain).');
+    if (!db) console.log('-> Set ODOO_DB explicitly (for this server it is "bakertilly").');
   }
 
   if (!db || !username || !apiKey) {
